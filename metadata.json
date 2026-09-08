@@ -1,0 +1,6 @@
+{
+  "name": "نظام متابعة الأعمال والقطاعات",
+  "description": "داشبورد متابعة الأعمال والقطاعات وبيان مدة التنفيذ والفسح والمواقع بالاعتماد على قاعدة البيانات الفعلية",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
