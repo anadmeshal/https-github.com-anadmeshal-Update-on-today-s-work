@@ -37,11 +37,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
     Boolean(filter.status);
 
   return (
-    <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-2xs mb-5 print:hidden">
+    <div className="bg-slate-900/90 p-3.5 rounded-xl border border-slate-800 shadow-xl mb-5 print:hidden">
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
         {/* Search Field */}
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-500">
             <Search className="w-4 h-4" />
           </div>
           <input
@@ -49,12 +49,12 @@ export const FilterBar: React.FC<FilterBarProps> = ({
             value={filter.search}
             onChange={(e) => onFilterChange({ ...filter, search: e.target.value })}
             placeholder="بحث فوري في وصف الأعمال، اسم الشارع، رقم القطاع، رقم الفسح..."
-            className="w-full pr-10 pl-16 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-900 placeholder:text-slate-400 transition-all font-medium"
+            className="w-full pr-10 pl-16 py-2 text-xs sm:text-sm bg-slate-950 border border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-black text-white placeholder:text-slate-500 transition-all font-medium"
           />
           {filter.search && (
             <button
               onClick={() => onFilterChange({ ...filter, search: '' })}
-              className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 hover:text-slate-700 font-semibold"
+              className="absolute inset-y-0 left-0 pl-3 flex items-center text-xs text-slate-400 hover:text-white font-semibold"
             >
               مسح
             </button>
@@ -69,11 +69,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <select
                 value={filter.sector}
                 onChange={(e) => onFilterChange({ ...filter, sector: e.target.value })}
-                className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium cursor-pointer"
+                className="w-full py-2 px-3 text-xs bg-slate-950 border border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-200 font-medium cursor-pointer"
               >
-                <option value="">كل القطاعات ({uniqueSectors.length})</option>
+                <option value="" className="bg-slate-950 text-slate-200">كل القطاعات ({uniqueSectors.length})</option>
                 {uniqueSectors.map((sec) => (
-                  <option key={sec} value={sec}>
+                  <option key={sec} value={sec} className="bg-slate-950 text-slate-200">
                     {sec}
                   </option>
                 ))}
@@ -87,11 +87,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
               <select
                 value={filter.streetName}
                 onChange={(e) => onFilterChange({ ...filter, streetName: e.target.value })}
-                className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium cursor-pointer"
+                className="w-full py-2 px-3 text-xs bg-slate-950 border border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-200 font-medium cursor-pointer"
               >
-                <option value="">كل الشوارع ({uniqueStreets.length})</option>
+                <option value="" className="bg-slate-950 text-slate-200">كل الشوارع ({uniqueStreets.length})</option>
                 {uniqueStreets.map((st) => (
-                  <option key={st} value={st}>
+                  <option key={st} value={st} className="bg-slate-950 text-slate-200">
                     {st}
                   </option>
                 ))}
@@ -109,11 +109,11 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                   hasPermit: e.target.value as 'all' | 'with_permit' | 'without_permit',
                 })
               }
-              className="w-full py-2 px-3 text-xs bg-slate-50 border border-slate-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-800 font-medium cursor-pointer"
+              className="w-full py-2 px-3 text-xs bg-slate-950 border border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-200 font-medium cursor-pointer"
             >
-              <option value="all">حالة الفسح (الكل)</option>
-              <option value="with_permit">يوجد فسح مسجل</option>
-              <option value="without_permit">بدون فسح مسجل</option>
+              <option value="all" className="bg-slate-950 text-slate-200">حالة الفسح (الكل)</option>
+              <option value="with_permit" className="bg-slate-950 text-slate-200">يوجد فسح مسجل</option>
+              <option value="without_permit" className="bg-slate-950 text-slate-200">بدون فسح مسجل</option>
             </select>
           </div>
 
@@ -121,7 +121,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           {isFiltered && (
             <button
               onClick={handleReset}
-              className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-2 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors"
               title="إعادة تعيين الفلاتر"
             >
               <RotateCcw className="w-3.5 h-3.5" />
@@ -130,7 +130,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           )}
 
           {/* Count Badge */}
-          <div className="text-xs font-bold text-slate-700 px-3 py-2 bg-slate-100 rounded-lg border border-slate-200 shrink-0">
+          <div className="text-xs font-bold text-slate-300 px-3 py-2 bg-slate-950 rounded-lg border border-slate-800 shrink-0 font-mono">
             {totalFiltered} من أصل {totalAll}
           </div>
         </div>

@@ -62,23 +62,23 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-xl max-w-xl w-full p-6 text-right relative max-h-[90vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-xs">
+      <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-2xl max-w-xl w-full p-6 text-right relative max-h-[90vh] flex flex-col text-slate-100">
         {/* Close button */}
         <button
           onClick={onClose}
-          className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="absolute top-4 left-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-blue-950 text-blue-400 border border-blue-800 flex items-center justify-center">
             <FileSpreadsheet className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900">رفع ملف Excel للأعمال والقطاعات</h3>
-            <p className="text-xs text-slate-500">
+            <h3 className="text-lg font-bold text-white">رفع ملف Excel للأعمال والقطاعات</h3>
+            <p className="text-xs text-slate-400">
               قراءة البيانات الفعلية لكامل الأعمدة (وصف الأعمال، الموقع، الشارع، مدة التنفيذ، والفسح)
             </p>
           </div>
@@ -96,8 +96,8 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
             onClick={() => fileInputRef.current?.click()}
             className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
               isDragging
-                ? 'border-blue-500 bg-blue-50/50'
-                : 'border-slate-300 hover:border-slate-400 bg-slate-50/50'
+                ? 'border-blue-500 bg-blue-950/40'
+                : 'border-slate-700 hover:border-slate-600 bg-slate-950/60'
             }`}
           >
             <input
@@ -112,20 +112,20 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
               }}
             />
             <Upload className="w-10 h-10 text-slate-400 mx-auto mb-3" />
-            <p className="text-sm font-semibold text-slate-700">
+            <p className="text-sm font-semibold text-slate-200">
               اضغط لاختيار ملف أو اسحب الملف وأفلته هنا
             </p>
-            <p className="text-xs text-slate-500 mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               يدعم ملفات Excel (.xlsx, .xls) وملفات القيم المفصولة (.csv)
             </p>
           </div>
         ) : (
           <div className="flex-1 overflow-y-auto">
             {/* File loaded summary */}
-            <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between mb-4">
+            <div className="p-3 bg-emerald-950/60 border border-emerald-800 rounded-lg flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <Check className="w-4 h-4 text-emerald-600" />
-                <span className="text-xs font-bold text-emerald-800">
+                <Check className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-emerald-300">
                   تم استخراج {previewItems.length} صف من الملف: {selectedFile?.name}
                 </span>
               </div>
@@ -134,16 +134,16 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
                   setPreviewItems(null);
                   setSelectedFile(null);
                 }}
-                className="text-xs text-slate-500 hover:text-slate-800 underline"
+                className="text-xs text-slate-400 hover:text-white underline cursor-pointer"
               >
                 اختيار ملف آخر
               </button>
             </div>
 
             {/* Quick Preview Table */}
-            <div className="border border-slate-200 rounded-lg overflow-hidden max-h-52 overflow-y-auto mb-4 text-xs">
+            <div className="border border-slate-800 rounded-lg overflow-hidden max-h-52 overflow-y-auto mb-4 text-xs">
               <table className="w-full text-right">
-                <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0">
+                <thead className="bg-slate-950 text-slate-300 font-semibold sticky top-0 border-b border-slate-800">
                   <tr>
                     <th className="p-2">القطاع</th>
                     <th className="p-2">وصف الأعمال</th>
@@ -152,10 +152,10 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
                     <th className="p-2">الفسح</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-slate-800 text-slate-300">
                   {previewItems.slice(0, 5).map((row, i) => (
-                    <tr key={i} className="hover:bg-slate-50">
-                      <td className="p-2 font-bold">{row.sector}</td>
+                    <tr key={i} className="hover:bg-slate-800/50">
+                      <td className="p-2 font-bold text-white">{row.sector}</td>
                       <td className="p-2 truncate max-w-[140px]">{row.workDescription || '-'}</td>
                       <td className="p-2">{row.streetName || '-'}</td>
                       <td className="p-2">{row.duration || '-'}</td>
@@ -166,7 +166,7 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
               </table>
             </div>
             {previewItems.length > 5 && (
-              <p className="text-xs text-slate-500 mb-4 text-center">
+              <p className="text-xs text-slate-400 mb-4 text-center">
                 + {previewItems.length - 5} صفوف إضافية تم قراءتها بالكامل
               </p>
             )}
@@ -174,24 +174,24 @@ export const ExcelUploadModal: React.FC<ExcelUploadModalProps> = ({
         )}
 
         {error && (
-          <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-xs text-red-700">
+          <div className="mt-3 p-3 bg-red-950/60 border border-red-800 rounded-lg flex items-center gap-2 text-xs text-red-300">
             <AlertCircle className="w-4 h-4 shrink-0" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Footer Actions */}
-        <div className="mt-6 flex items-center justify-end gap-2 pt-3 border-t border-slate-200">
+        <div className="mt-6 flex items-center justify-end gap-2 pt-3 border-t border-slate-800">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+            className="px-4 py-2 text-xs font-medium text-slate-300 hover:bg-slate-800 border border-slate-700 rounded-lg transition-colors cursor-pointer"
           >
             إلغاء
           </button>
           {previewItems && (
             <button
               onClick={handleConfirm}
-              className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs"
+              className="px-4 py-2 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-sm cursor-pointer"
             >
               اعتماد وإدراج {previewItems.length} صف في النظام
             </button>

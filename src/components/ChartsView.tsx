@@ -59,13 +59,13 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ items, metadata }) => {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
       {/* 1. القطاعات المفتوحة والنشاط */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+      <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <PieIcon className="w-4 h-4 text-emerald-600" />
-            <h3 className="text-sm font-bold text-slate-800">حالة القطاعات (مفتوحة / مسجلة)</h3>
+            <PieIcon className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-bold text-white">حالة القطاعات (مفتوحة / مسجلة)</h3>
           </div>
-          <span className="text-xs text-slate-500">إجمالي {totalCount} قطاع</span>
+          <span className="text-xs text-slate-400">إجمالي {totalCount} قطاع</span>
         </div>
 
         <div className="h-60 w-full">
@@ -81,38 +81,38 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ items, metadata }) => {
                 dataKey="value"
               >
                 <Cell fill="#059669" />
-                <Cell fill="#cbd5e1" />
+                <Cell fill="#334155" />
               </Pie>
               <Tooltip
                 formatter={(value: any) => [`${value} قطاع`, 'العدد']}
-                contentStyle={{ direction: 'rtl', borderRadius: '8px' }}
+                contentStyle={{ direction: 'rtl', borderRadius: '8px', backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
               />
-              <Legend verticalAlign="bottom" height={36} />
+              <Legend verticalAlign="bottom" height={36} formatter={(val) => <span className="text-slate-300 text-xs">{val}</span>} />
             </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
 
       {/* 2. توزيع الأعمال حسب الشارع أو الموقع */}
-      <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-xs">
+      <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800 shadow-xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-blue-600" />
-            <h3 className="text-sm font-bold text-slate-800">توزيع الأعمال حسب الشارع والموقع</h3>
+            <BarChart3 className="w-4 h-4 text-blue-400" />
+            <h3 className="text-sm font-bold text-white">توزيع الأعمال حسب الشارع والموقع</h3>
           </div>
-          <span className="text-xs text-slate-500">البيانات الموثقة</span>
+          <span className="text-xs text-slate-400">البيانات الموثقة</span>
         </div>
 
         <div className="h-60 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={streetData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
-              <XAxis dataKey="name" tick={{ fontSize: 11 }} interval={0} angle={-15} textAnchor="end" />
-              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} stroke="#475569" interval={0} angle={-15} textAnchor="end" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} stroke="#475569" />
               <Tooltip
                 formatter={(value: any) => [`${value} عمل / قطاع`, 'العدد']}
-                contentStyle={{ direction: 'rtl', borderRadius: '8px' }}
+                contentStyle={{ direction: 'rtl', borderRadius: '8px', backgroundColor: '#0f172a', borderColor: '#334155', color: '#f8fafc' }}
               />
-              <Bar dataKey="count" fill="#2563eb" radius={[4, 4, 0, 0]} name="عدد الأعمال" />
+              <Bar dataKey="count" fill="#38bdf8" radius={[4, 4, 0, 0]} name="عدد الأعمال" />
             </BarChart>
           </ResponsiveContainer>
         </div>

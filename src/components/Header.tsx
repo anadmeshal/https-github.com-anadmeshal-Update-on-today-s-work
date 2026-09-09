@@ -38,7 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs print:hidden">
+    <header className="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 shadow-md backdrop-blur-md print:hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Title & Project Info */}
@@ -48,21 +48,21 @@ export const Header: React.FC<HeaderProps> = ({
                 م
               </div>
               <div>
-                <h1 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight flex items-center gap-2">
                   نظام متابعة الأعمال والقطاعات
-                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <CheckCircle2 className="w-3 h-3" />
+                  <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-0.5 rounded-full bg-emerald-950/60 text-emerald-300 border border-emerald-800">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-400" />
                     بيانات فعلية 100%
                   </span>
                 </h1>
-                <p className="text-sm text-slate-600 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                  <span className="font-semibold text-slate-800">{metadata.projectName}</span>
-                  <span className="text-slate-300">•</span>
-                  <span className="text-slate-600">{metadata.contractor}</span>
+                <p className="text-sm text-slate-400 mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span className="font-semibold text-slate-200">{metadata.projectName}</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-slate-400">{metadata.contractor}</span>
                   {metadata.date && (
                     <>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-slate-500 font-mono text-xs">{metadata.date}</span>
+                      <span className="text-slate-600">•</span>
+                      <span className="text-slate-400 font-mono text-xs">{metadata.date}</span>
                     </>
                   )}
                 </p>
@@ -76,17 +76,17 @@ export const Header: React.FC<HeaderProps> = ({
             <button
               onClick={onRefresh}
               disabled={isLoading}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors disabled:opacity-50"
               title="تحديث البيانات المباشرة من رابط Google Script"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-600' : ''}`} />
+              <RefreshCw className={`w-3.5 h-3.5 ${isLoading ? 'animate-spin text-emerald-400' : 'text-slate-300'}`} />
               <span>تحديث الرابط</span>
             </button>
 
             {/* Upload Excel */}
             <button
               onClick={onOpenUpload}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-300 bg-blue-950/70 hover:bg-blue-900/80 border border-blue-800/80 rounded-lg transition-colors shadow-xs"
               title="رفع ملف Excel به كامل الأعمدة (وصف، شارع، موقع، مدة، فسح)"
             >
               <Upload className="w-3.5 h-3.5" />
@@ -96,7 +96,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Add / Paste Row */}
             <button
               onClick={onOpenAddRow}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-emerald-300 bg-emerald-950/70 hover:bg-emerald-900/80 border border-emerald-800/80 rounded-lg transition-colors shadow-xs"
               title="إضافة صف أو لصق بيانات فعلية"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -106,7 +106,7 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Export PDF Button */}
             <button
               onClick={onExportPdf || handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-all shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-all shadow-xs"
               title="تصدير تقرير شامل ومعتمد لكافة القطاعات بصيغة PDF"
             >
               <FileDown className="w-4 h-4 text-white" />
@@ -116,30 +116,30 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Export Excel */}
             <button
               onClick={onExport}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors shadow-xs"
               title="تصدير جدول الأعمال الحالي إلى Excel"
             >
-              <Download className="w-3.5 h-3.5" />
+              <Download className="w-3.5 h-3.5 text-slate-300" />
               <span>تصدير Excel</span>
             </button>
 
             {/* Print Report */}
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-300 rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors shadow-xs"
               title="طباعة التقرير الفوري"
             >
-              <Printer className="w-3.5 h-3.5 text-slate-700" />
+              <Printer className="w-3.5 h-3.5 text-amber-400" />
               <span>طباعة</span>
             </button>
 
             {/* Script Helper */}
             <button
               onClick={onOpenScriptHelper}
-              className="inline-flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors"
+              className="inline-flex items-center gap-1.5 px-2.5 py-2 text-xs font-medium text-amber-300 bg-amber-950/70 hover:bg-amber-900/80 border border-amber-800/80 rounded-lg transition-colors"
               title="طريقة تصدير جميع أعمدة Google Sheet بالرابط"
             >
-              <Code2 className="w-3.5 h-3.5 text-amber-700" />
+              <Code2 className="w-3.5 h-3.5 text-amber-400" />
               <span className="hidden sm:inline">إعداد الرابط</span>
             </button>
           </div>
@@ -147,29 +147,29 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Live sync banner notice if detailed columns need script fix or upload */}
         {!hasDetailedColumns && (
-          <div className="mt-3.5 p-3 rounded-lg bg-blue-50/70 border border-blue-200/80 flex items-start gap-3 text-xs text-blue-900">
-            <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 shrink-0" />
+          <div className="mt-3.5 p-3 rounded-lg bg-blue-950/50 border border-blue-800/70 flex items-start gap-3 text-xs text-blue-200">
+            <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <span className="font-bold">حالة قاعدة البيانات: </span>
-              تم الاتصال بنجاح بالرابط الحي وقراءة <span className="font-semibold">{metadata.totalCount} قطاع</span> للمشروع.
+              <span className="font-bold text-blue-300">حالة قاعدة البيانات: </span>
+              تم الاتصال بنجاح بالرابط الحي وقراءة <span className="font-semibold text-white">{metadata.totalCount} قطاع</span> للمشروع.
               رابط Google Apps Script الحالي يرسل حالياً العمود الأول فقط؛ يمكنك 
               <button 
                 onClick={onOpenUpload}
-                className="mx-1 text-blue-700 font-bold underline hover:text-blue-900"
+                className="mx-1 text-blue-400 font-bold underline hover:text-blue-300"
               >
                 رفع ملف Excel مباشرة هنا
               </button>
               لعرض أعمدة (الوصف، الشارع، الموقع، مدة التنفيذ، الفسح) بشكل فوري، أو 
               <button 
                 onClick={onOpenScriptHelper}
-                className="mx-1 text-amber-800 font-bold underline hover:text-amber-950"
+                className="mx-1 text-amber-400 font-bold underline hover:text-amber-300"
               >
                 تحديث كود Google Apps Script
               </button> 
               لتصدير كافة الأعمدة تلقائياً.
             </div>
             {lastUpdated && (
-              <span className="text-slate-500 text-[11px] font-mono shrink-0">
+              <span className="text-slate-400 text-[11px] font-mono shrink-0">
                 آخر مزامنة: {lastUpdated}
               </span>
             )}

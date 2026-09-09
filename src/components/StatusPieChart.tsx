@@ -70,9 +70,9 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
         percentage: Math.round((openCount / total) * 100),
         totalLengthMeters: Math.round(openLength * 10) / 10,
         color: '#0284c7', // Sky-600
-        bgColor: 'bg-sky-50',
-        borderColor: 'border-sky-300',
-        textColor: 'text-sky-700',
+        bgColor: 'bg-sky-950/80',
+        borderColor: 'border-sky-800',
+        textColor: 'text-sky-300',
         description: 'قطاعات رص سيفتي وحواجز السلامة بانتظار بدء الحفر',
       },
       {
@@ -83,9 +83,9 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
         percentage: Math.round((inProgressCount / total) * 100),
         totalLengthMeters: Math.round(inProgressLength * 10) / 10,
         color: '#f59e0b', // Amber-500
-        bgColor: 'bg-amber-50',
-        borderColor: 'border-amber-300',
-        textColor: 'text-amber-700',
+        bgColor: 'bg-amber-950/80',
+        borderColor: 'border-amber-800',
+        textColor: 'text-amber-300',
         description: 'أعمال حفر، تمديد، دفان، استلام بحص، وMC-1',
       },
       {
@@ -96,9 +96,9 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
         percentage: Math.round((completedCount / total) * 100),
         totalLengthMeters: Math.round(completedLength * 10) / 10,
         color: '#10b981', // Emerald-500
-        bgColor: 'bg-emerald-50',
-        borderColor: 'border-emerald-300',
-        textColor: 'text-emerald-700',
+        bgColor: 'bg-emerald-950/80',
+        borderColor: 'border-emerald-800',
+        textColor: 'text-emerald-300',
         description: 'أعمال الأسفلت المنفذة (طبقة أولى ط1 / طبقة ثانية ط2)',
       },
     ];
@@ -114,7 +114,7 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
     if (active && payload && payload.length) {
       const data: StatusSlice = payload[0].payload;
       return (
-        <div className="bg-slate-900 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs font-sans min-w-[190px] z-50">
+        <div className="bg-slate-900/95 text-white p-3 rounded-xl shadow-xl border border-slate-700 text-xs font-sans min-w-[190px] z-50 backdrop-blur-xs">
           <div className="flex items-center gap-2 mb-2 pb-1.5 border-b border-slate-800">
             <span
               className="w-3 h-3 rounded-full shrink-0"
@@ -148,21 +148,21 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-2xs mb-5 overflow-hidden print:hidden">
+    <div className="bg-slate-900/90 rounded-xl border border-slate-800 shadow-xl mb-5 overflow-hidden print:hidden">
       {/* Chart Header */}
-      <div className="px-5 py-3.5 border-b border-slate-200 bg-slate-50/70 flex flex-wrap items-center justify-between gap-3">
+      <div className="px-5 py-3.5 border-b border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2.5">
-          <div className="p-2 bg-blue-100/80 text-blue-700 rounded-lg">
+          <div className="p-2 bg-blue-950 text-blue-400 border border-blue-800/80 rounded-lg">
             <PieChartIcon className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+            <h3 className="text-sm font-extrabold text-white flex items-center gap-2">
               توزيع حالة العمل للقطاعات
-              <span className="text-xs font-normal text-slate-500 font-mono">
+              <span className="text-xs font-normal text-slate-400 font-mono">
                 ({totalSectors} قطاع • {totalMeters.toLocaleString('ar-SA')} م.ط)
               </span>
             </h3>
-            <p className="text-xs text-slate-600">
+            <p className="text-xs text-slate-400">
               رسم بياني يوضح نسب توزيع الأعمال الميدانية (مفتوح، جاري، منجز)
             </p>
           </div>
@@ -171,7 +171,7 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
         {selectedStatus && onSelectStatus && (
           <button
             onClick={() => onSelectStatus('')}
-            className="text-xs text-slate-600 hover:text-red-600 flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-red-50 rounded-md border border-slate-200 transition-colors"
+            className="text-xs text-slate-300 hover:text-red-400 flex items-center gap-1 px-2.5 py-1 bg-slate-900 hover:bg-red-950/40 rounded-md border border-slate-700 transition-colors cursor-pointer"
           >
             <Filter className="w-3.5 h-3.5" />
             <span>إلغاء تصفية الرسم البياني</span>
@@ -212,7 +212,7 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
                         <Cell
                           key={`cell-${entry.name}`}
                           fill={entry.color}
-                          stroke={isSelected ? '#0f172a' : '#ffffff'}
+                          stroke={isSelected ? '#38bdf8' : '#0f172a'}
                           strokeWidth={isSelected ? 3 : 1.5}
                           style={{
                             transform: isHovered ? 'scale(1.04)' : 'scale(1)',
@@ -228,10 +228,10 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
 
               {/* Center Donut Metric */}
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-2xl font-black text-slate-900 font-mono leading-none">
+                <span className="text-2xl font-black text-white font-mono leading-none">
                   {totalSectors}
                 </span>
-                <span className="text-[11px] font-bold text-slate-500 mt-1">
+                <span className="text-[11px] font-bold text-slate-400 mt-1">
                   إجمالي القطاعات
                 </span>
               </div>
@@ -255,10 +255,10 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
                       onSelectStatus(isSelected ? '' : slice.name);
                     }
                   }}
-                  className={`text-right p-4 rounded-xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between ${
+                  className={`text-right p-4 rounded-xl border transition-all duration-200 relative overflow-hidden flex flex-col justify-between cursor-pointer ${
                     isSelected
-                      ? 'ring-2 ring-blue-600 shadow-md bg-white border-blue-400 scale-[1.02]'
-                      : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
+                      ? 'ring-2 ring-blue-500 shadow-lg bg-slate-950 border-blue-500 scale-[1.02]'
+                      : 'bg-slate-900 hover:bg-slate-800/80 border-slate-800 hover:border-slate-700'
                   }`}
                 >
                   {/* Top Bar Indicator */}
@@ -274,42 +274,42 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
                           className="w-2.5 h-2.5 rounded-full shrink-0"
                           style={{ backgroundColor: slice.color }}
                         />
-                        <span className="font-extrabold text-sm text-slate-900">
+                        <span className="font-extrabold text-sm text-white">
                           {slice.name}
                         </span>
                       </div>
 
                       {slice.name === 'منجز' && (
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                       )}
                       {slice.name === 'جاري' && (
-                        <Clock className="w-4 h-4 text-amber-500" />
+                        <Clock className="w-4 h-4 text-amber-400" />
                       )}
                       {slice.name === 'مفتوح' && (
-                        <AlertCircle className="w-4 h-4 text-sky-600" />
+                        <AlertCircle className="w-4 h-4 text-sky-400" />
                       )}
                     </div>
 
                     <div className="flex items-baseline gap-2 mb-1">
-                      <span className="text-2xl font-black text-slate-900 font-mono">
+                      <span className="text-2xl font-black text-white font-mono">
                         {slice.value}
                       </span>
-                      <span className="text-xs font-bold text-slate-500">قطاع</span>
+                      <span className="text-xs font-bold text-slate-400">قطاع</span>
                       <span
-                        className={`mr-auto text-xs font-extrabold px-1.5 py-0.5 rounded font-mono ${slice.bgColor} ${slice.textColor}`}
+                        className={`mr-auto text-xs font-extrabold px-1.5 py-0.5 rounded font-mono border ${slice.bgColor} ${slice.borderColor} ${slice.textColor}`}
                       >
                         {slice.percentage}%
                       </span>
                     </div>
 
-                    <p className="text-[11.5pt] sm:text-xs text-slate-600 line-clamp-1 mb-2">
+                    <p className="text-[11.5pt] sm:text-xs text-slate-300 line-clamp-1 mb-2">
                       {slice.label}
                     </p>
                   </div>
 
-                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+                  <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-xs text-slate-400">
                     <span>إجمالي الطول:</span>
-                    <span className="font-bold text-slate-800 font-mono">
+                    <span className="font-bold text-slate-200 font-mono">
                       {slice.totalLengthMeters.toLocaleString('ar-SA')} م
                     </span>
                   </div>

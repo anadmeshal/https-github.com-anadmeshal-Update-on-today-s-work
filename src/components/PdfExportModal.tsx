@@ -85,24 +85,24 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 backdrop-blur-xs p-4 overflow-y-auto print:hidden">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-200 overflow-hidden text-right">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 backdrop-blur-xs p-4 overflow-y-auto print:hidden">
+      <div className="bg-slate-900 rounded-2xl shadow-2xl max-w-2xl w-full border border-slate-800 overflow-hidden text-right text-slate-100">
         {/* Header */}
-        <div className="p-5 bg-gradient-to-r from-red-600 to-rose-700 text-white flex items-center justify-between">
+        <div className="p-5 bg-gradient-to-r from-red-700 to-rose-900 text-white flex items-center justify-between border-b border-rose-900/50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/20 flex items-center justify-center">
               <FileDown className="w-6 h-6 text-white" />
             </div>
             <div>
               <h2 className="text-lg font-extrabold">تصدير تقرير رسمي معتمد (PDF)</h2>
-              <p className="text-xs text-red-100 mt-0.5">
+              <p className="text-xs text-red-200 mt-0.5">
                 توليد ملف PDF عالي الدقة (A4 أفقي) جاهز للطباعة والاعتماد
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-white/20 text-white/80 hover:text-white transition-colors"
+            className="p-1.5 rounded-lg hover:bg-white/10 text-white/80 hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -111,24 +111,24 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
         {/* Body Content */}
         <div className="p-6 space-y-5">
           {/* Summary Box */}
-          <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 text-xs space-y-2">
+          <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-4 text-xs space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-bold">اسم المشروع:</span>
-              <span className="font-extrabold text-slate-900">{metadata.projectName}</span>
+              <span className="text-slate-400 font-bold">اسم المشروع:</span>
+              <span className="font-extrabold text-white">{metadata.projectName}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-bold">المقاول المنفذ:</span>
-              <span className="font-bold text-slate-800">{metadata.contractor}</span>
+              <span className="text-slate-400 font-bold">المقاول المنفذ:</span>
+              <span className="font-bold text-slate-200">{metadata.contractor}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-bold">إجمالي القطاعات المشمولة:</span>
-              <span className="font-extrabold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+              <span className="text-slate-400 font-bold">إجمالي القطاعات المشمولة:</span>
+              <span className="font-extrabold text-emerald-300 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-800">
                 {items.length} قطاع بالكامل
               </span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-slate-500 font-bold">عدد الصفحات المتوقع:</span>
-              <span className="font-mono font-bold text-blue-700">
+              <span className="text-slate-400 font-bold">عدد الصفحات المتوقع:</span>
+              <span className="font-mono font-bold text-blue-400">
                 {pageChunks.length} صفحات A4 (أفقي)
               </span>
             </div>
@@ -136,30 +136,30 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
           {/* Progress / Status */}
           {isGenerating ? (
-            <div className="p-5 rounded-xl bg-blue-50 border border-blue-200 text-center space-y-3">
-              <div className="flex items-center justify-center gap-2 text-blue-900 font-bold text-sm">
-                <RefreshCw className="w-5 h-5 animate-spin text-blue-600" />
+            <div className="p-5 rounded-xl bg-blue-950/40 border border-blue-800 text-center space-y-3">
+              <div className="flex items-center justify-center gap-2 text-blue-300 font-bold text-sm">
+                <RefreshCw className="w-5 h-5 animate-spin text-blue-400" />
                 <span>{statusMessage || 'جاري توليد ملف PDF...'}</span>
               </div>
               {/* Progress Bar */}
-              <div className="w-full bg-blue-200 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
                 <div
-                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  className="bg-blue-500 h-2.5 rounded-full transition-all duration-300"
                   style={{ width: `${progress}%` }}
                 ></div>
               </div>
-              <p className="text-[11px] text-blue-700 font-mono">{progress}% مكتمل</p>
+              <p className="text-[11px] text-blue-300 font-mono">{progress}% مكتمل</p>
             </div>
           ) : downloadedFileName ? (
-            <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 space-y-2">
+            <div className="p-4 rounded-xl bg-emerald-950/60 border border-emerald-800 text-emerald-200 space-y-2">
               <div className="flex items-center gap-2 font-bold text-sm">
-                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
                 <span>تم تنزيل ملف الـ PDF بنجاح على جهازك!</span>
               </div>
-              <p className="text-xs text-emerald-800 font-mono break-all pr-7">
+              <p className="text-xs text-emerald-300 font-mono break-all pr-7">
                 {downloadedFileName}
               </p>
-              <p className="text-[11px] text-emerald-700 pr-7">
+              <p className="text-[11px] text-emerald-400 pr-7">
                 تم حفظ التقرير في مجلد التنزيلات (Downloads) بجهازك بكامل البيانات والجداول.
               </p>
             </div>
@@ -167,8 +167,8 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
           {/* Error Message if any */}
           {error && (
-            <div className="p-4 rounded-xl bg-red-50 border border-red-300 text-red-900 text-xs flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            <div className="p-4 rounded-xl bg-red-950/60 border border-red-800 text-red-200 text-xs flex items-center gap-3">
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
               <div>
                 <p className="font-bold">تعذر استكمال التنزيل:</p>
                 <p className="mt-0.5">{error}</p>
@@ -182,7 +182,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
               <button
                 onClick={handleStartDownload}
                 disabled={isGenerating}
-                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50"
+                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm flex items-center gap-2 shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
               >
                 <FileDown className="w-4 h-4" />
                 <span>{downloadedFileName ? 'إعادة تحميل ملف PDF' : 'تحميل ملف PDF الآن'}</span>
@@ -190,17 +190,17 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
               <button
                 onClick={() => window.print()}
-                className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-300"
+                className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs flex items-center gap-1.5 transition-colors border border-slate-700 cursor-pointer"
                 title="طباعة مباشرة عبر طابعة النظام"
               >
-                <Printer className="w-4 h-4 text-slate-600" />
+                <Printer className="w-4 h-4 text-slate-400" />
                 <span>طباعة بالمستعرض</span>
               </button>
             </div>
 
             <button
               onClick={() => setShowPreview(!showPreview)}
-              className="px-3 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 flex items-center gap-1"
+              className="px-3 py-2 text-xs font-bold text-slate-400 hover:text-white flex items-center gap-1 cursor-pointer"
             >
               <Eye className="w-3.5 h-3.5" />
               <span>{showPreview ? 'إخفاء المعاينة' : 'معاينة الصفحات'}</span>
@@ -209,9 +209,9 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
 
           {/* Live Preview If Toggled */}
           {showPreview && (
-            <div className="mt-4 p-3 bg-slate-100 rounded-xl border border-slate-200 max-h-60 overflow-y-auto text-xs text-center">
-              <p className="font-bold text-slate-700 mb-2">معاينة مصغرة لصفحات التقرير ({pageChunks.length} صفحات)</p>
-              <p className="text-slate-500 text-[11px]">
+            <div className="mt-4 p-3 bg-slate-950 rounded-xl border border-slate-800 max-h-60 overflow-y-auto text-xs text-center">
+              <p className="font-bold text-slate-300 mb-2">معاينة مصغرة لصفحات التقرير ({pageChunks.length} صفحات)</p>
+              <p className="text-slate-400 text-[11px]">
                 الملف الذي سيتم تنزيله يتضمن الترويسة المعتمدة، جدول الأعمال، والأختام والتواقيع الثلاثية.
               </p>
             </div>

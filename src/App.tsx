@@ -279,7 +279,7 @@ export default function App() {
   }, [items, filters, chartStatusFilter]);
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col selection:bg-blue-100 selection:text-blue-900 font-sans">
+    <div className="min-h-screen bg-black text-slate-100 flex flex-col selection:bg-blue-900 selection:text-white font-sans">
       {/* Header */}
       <Header
         metadata={metadata}
@@ -306,17 +306,17 @@ export default function App() {
 
         {/* Error Alert if any */}
         {error && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-300 flex items-center justify-between text-red-900 text-sm shadow-xs print:hidden">
+          <div className="mb-6 p-4 rounded-xl bg-red-950/70 border border-red-800 flex items-center justify-between text-red-200 text-sm shadow-xs print:hidden">
             <div className="flex items-center gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+              <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
               <div>
-                <p className="font-bold">تعذر الاتصال برابط قاعدة البيانات:</p>
-                <p className="text-xs mt-0.5 text-red-700">{error}</p>
+                <p className="font-bold text-red-300">تعذر الاتصال برابط قاعدة البيانات:</p>
+                <p className="text-xs mt-0.5 text-red-400 font-mono">{error}</p>
               </div>
             </div>
             <button
               onClick={() => loadLiveData(apiUrl)}
-              className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
+              className="px-3 py-1.5 bg-red-700 hover:bg-red-600 text-white rounded-lg text-xs font-bold flex items-center gap-1 transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
               إعادة المحاولة
@@ -327,30 +327,30 @@ export default function App() {
         {/* Loading overlay if first time loading and empty */}
         {isLoading && items.length === 0 && (
           <div className="py-20 text-center flex flex-col items-center justify-center gap-3 print:hidden">
-            <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-            <p className="text-base font-bold text-slate-800">
+            <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
+            <p className="text-base font-bold text-slate-200">
               جاري الاتصال المباشر برابط Google Apps Script وقراءة بيانات الجدول...
             </p>
-            <p className="text-xs text-slate-500 font-mono">{apiUrl}</p>
+            <p className="text-xs text-slate-400 font-mono">{apiUrl}</p>
           </div>
         )}
 
         {/* Core Project Info Bar */}
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
+        <div className="bg-slate-900/90 p-4 rounded-xl border border-slate-800 shadow-xl mb-5 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 print:hidden">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 text-white flex items-center justify-center font-bold shadow-inner">
               <Table className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-extrabold text-slate-900">
+              <h1 className="text-base sm:text-lg font-extrabold text-white">
                 {metadata.projectName}
               </h1>
-              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600 mt-0.5 font-medium">
-                <span>{metadata.contractor}</span>
-                <span>•</span>
-                <span>تاريخ التقرير: <strong className="text-slate-800 font-mono">{metadata.date}</strong></span>
-                <span>•</span>
-                <span>القطاعات المستلمة من الرابط: <strong className="text-blue-700 font-mono">{items.length} قطاع</strong></span>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400 mt-0.5 font-medium">
+                <span className="text-slate-300">{metadata.contractor}</span>
+                <span className="text-slate-600">•</span>
+                <span>تاريخ التقرير: <strong className="text-slate-200 font-mono">{metadata.date}</strong></span>
+                <span className="text-slate-600">•</span>
+                <span>القطاعات المستلمة من الرابط: <strong className="text-blue-400 font-mono">{items.length} قطاع</strong></span>
               </div>
             </div>
           </div>
@@ -358,7 +358,7 @@ export default function App() {
           <div className="flex items-center flex-wrap gap-2 text-xs">
             <button
               onClick={handleExportPdf}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition-colors shadow-sm"
               title="تصدير تقرير رسمي معتمد لكافة القطاعات بصيغة PDF"
             >
               <FileDown className="w-4 h-4 text-white" />
@@ -366,13 +366,13 @@ export default function App() {
             </button>
             <button
               onClick={() => setIsRawDataOpen(true)}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold transition-colors shadow-2xs"
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border border-slate-700 font-bold transition-colors shadow-sm"
             >
               <Code2 className="w-4 h-4 text-emerald-400" />
               <span>فحص JSON الرابط ({items.length} قطاع)</span>
             </button>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-300 font-bold">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-950/60 text-emerald-300 border border-emerald-800/80 font-bold">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               بيانات فعلية من الرابط الحي
             </span>
           </div>
@@ -396,17 +396,17 @@ export default function App() {
         {/* Analytics & Charts Section Header */}
         <div className="flex flex-wrap items-center justify-between gap-3 mb-4 print:hidden">
           <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-500">طريقة عرض الرسوم البيانية:</span>
-            <div className="flex items-center bg-slate-200/80 p-1 rounded-xl text-xs font-bold text-slate-700 shadow-2xs">
+            <span className="text-xs font-bold text-slate-400">طريقة عرض الرسوم البيانية:</span>
+            <div className="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs font-bold text-slate-300 shadow-sm">
               <button
                 onClick={() => setChartViewMode('compare')}
                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                   chartViewMode === 'compare'
-                    ? 'bg-white text-indigo-950 shadow-xs font-extrabold'
-                    : 'hover:text-slate-900'
+                    ? 'bg-slate-800 text-indigo-300 border border-indigo-700/50 shadow-sm font-extrabold'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <ArrowLeftRight className="w-4 h-4 text-indigo-600" />
+                <ArrowLeftRight className="w-4 h-4 text-indigo-400" />
                 <span>مقارنة قطاعين (Sector Comparison)</span>
               </button>
 
@@ -414,11 +414,11 @@ export default function App() {
                 onClick={() => setChartViewMode('line')}
                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                   chartViewMode === 'line'
-                    ? 'bg-white text-blue-900 shadow-xs font-extrabold'
-                    : 'hover:text-slate-900'
+                    ? 'bg-slate-800 text-blue-300 border border-blue-700/50 shadow-sm font-extrabold'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <TrendingUp className="w-4 h-4 text-blue-600" />
+                <TrendingUp className="w-4 h-4 text-blue-400" />
                 <span>الأداء التاريخي (Line Chart)</span>
               </button>
 
@@ -426,11 +426,11 @@ export default function App() {
                 onClick={() => setChartViewMode('pie')}
                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                   chartViewMode === 'pie'
-                    ? 'bg-white text-amber-900 shadow-xs font-extrabold'
-                    : 'hover:text-slate-900'
+                    ? 'bg-slate-800 text-amber-300 border border-amber-700/50 shadow-sm font-extrabold'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <PieChartIcon className="w-4 h-4 text-amber-500" />
+                <PieChartIcon className="w-4 h-4 text-amber-400" />
                 <span>توزيع الحالات (Pie Chart)</span>
               </button>
 
@@ -438,11 +438,11 @@ export default function App() {
                 onClick={() => setChartViewMode('both')}
                 className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
                   chartViewMode === 'both'
-                    ? 'bg-white text-slate-900 shadow-xs font-extrabold'
-                    : 'hover:text-slate-900'
+                    ? 'bg-slate-800 text-white border border-slate-700 shadow-sm font-extrabold'
+                    : 'text-slate-400 hover:text-white'
                 }`}
               >
-                <LayoutGrid className="w-4 h-4 text-slate-700" />
+                <LayoutGrid className="w-4 h-4 text-slate-300" />
                 <span>عرض شامل (كافة الرسوم)</span>
               </button>
             </div>
@@ -493,8 +493,8 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-4 mt-8 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-600">
+      <footer className="border-t border-slate-800 bg-slate-900/90 py-4 mt-8 print:hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
           <div>
             عقد تنفيذ شبكات صرف صحي العوالى 2 • مقاولة شركة نظم  البيئة للمقاولات
           </div>
@@ -503,7 +503,7 @@ export default function App() {
               href={apiUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-slate-900 flex items-center gap-1 text-slate-500 hover:underline"
+              className="hover:text-white flex items-center gap-1 text-slate-400 hover:underline"
             >
               <span>رابط Google Apps Script المباشر</span>
               <ExternalLink className="w-3.5 h-3.5" />
