@@ -1,6 +1,9 @@
 import React from 'react';
-import { RefreshCw, Upload, Plus, Download, Code2, CheckCircle2, AlertCircle, Printer, FileDown } from 'lucide-react';
+import { RefreshCw, Upload, Plus, Download, Code2, CheckCircle2, AlertCircle, Printer, FileDown, Monitor, Maximize2, Minimize2, Sun, Moon } from 'lucide-react';
 import { ProjectMetadata } from '../types';
+
+export type LayoutWidthMode = 'comfortable' | 'full' | 'compact';
+export type ThemeMode = 'dark' | 'light';
 
 interface HeaderProps {
   metadata: ProjectMetadata;
@@ -14,6 +17,11 @@ interface HeaderProps {
   onOpenScriptHelper: () => void;
   lastUpdated: string | null;
   hasDetailedColumns: boolean;
+  layoutWidth: LayoutWidthMode;
+  onLayoutWidthChange: (mode: LayoutWidthMode) => void;
+  containerWidthClass: string;
+  theme: ThemeMode;
+  onToggleTheme: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -28,6 +36,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenScriptHelper,
   lastUpdated,
   hasDetailedColumns,
+  layoutWidth,
+  onLayoutWidthChange,
+  containerWidthClass,
+  theme,
+  onToggleTheme,
 }) => {
   const handlePrint = () => {
     if (onPrint) {
@@ -38,8 +51,8 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 shadow-md backdrop-blur-md print:hidden">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+    <header className="bg-slate-900/95 border-b border-slate-800 sticky top-0 z-30 shadow-md backdrop-blur-md print:hidden w-full">
+      <div className={`${containerWidthClass} py-4`}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Title & Project Info */}
           <div>
@@ -70,8 +83,84 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
           </div>
 
-          {/* Actions */}
+          {/* Actions & Layout Width Controls */}
           <div className="flex items-center flex-wrap gap-2">
+            {/* Layout Width Mode Switcher */}
+            <div className="flex items-center rounded-lg bg-slate-950 border border-slate-800 p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => onLayoutWidthChange('comfortable')}
+                className={`px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  layoutWidth === 'comfortable'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="عرض مناسب ومتوازن (1536px) - مريح للعينين ومناسب لجميع الشاشات"
+              >
+                <Monitor className="w-3.5 h-3.5" />
+                <span>عرض مناسب</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onLayoutWidthChange('full')}
+                className={`px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  layoutWidth === 'full'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="ملء الشاشة بالكامل (100%)"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">ملء الشاشة</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onLayoutWidthChange('compact')}
+                className={`px-2.5 py-1.5 rounded-md font-semibold transition-colors flex items-center gap-1.5 cursor-pointer ${
+                  layoutWidth === 'compact'
+                    ? 'bg-blue-600 text-white shadow-xs'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="عرض قياسي (1280px)"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">قياسي</span>
+              </button>
+            </div>
+            {/* Theme Toggle: Explicit 2-button Segmented Control */}
+            <div className={`flex items-center rounded-lg p-0.5 text-xs border transition-colors ${
+              theme === 'light' 
+                ? 'bg-slate-100 border-slate-300' 
+                : 'bg-slate-950 border-slate-800'
+            }`}>
+              <button
+                type="button"
+                onClick={() => theme !== 'dark' && onToggleTheme()}
+                className={`px-2.5 py-1.5 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  theme === 'dark'
+                    ? 'bg-slate-800 text-amber-300 shadow-xs border border-slate-700'
+                    : 'text-slate-500 hover:text-slate-900'
+                }`}
+                title="تفعيل الوضع الليلي (Dark Mode)"
+              >
+                <Moon className="w-3.5 h-3.5" />
+                <span>ليلي</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => theme !== 'light' && onToggleTheme()}
+                className={`px-2.5 py-1.5 rounded-md font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  theme === 'light'
+                    ? 'bg-white text-blue-700 shadow-xs border border-slate-300'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="تفعيل الوضع الفاتح (Light Mode)"
+              >
+                <Sun className="w-3.5 h-3.5" />
+                <span>فاتح</span>
+              </button>
+            </div>
+
             {/* Sync from live Google Script */}
             <button
               onClick={onRefresh}
@@ -106,17 +195,17 @@ export const Header: React.FC<HeaderProps> = ({
             {/* Export PDF Button */}
             <button
               onClick={onExportPdf || handlePrint}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-white bg-red-600 hover:bg-red-500 rounded-lg transition-all shadow-xs"
-              title="تصدير تقرير شامل ومعتمد لكافة القطاعات بصيغة PDF"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-black text-white bg-red-600 hover:bg-red-500 rounded-lg transition-all shadow-sm cursor-pointer"
+              title="تصدير وطباعة تقرير رسمي معتمد لكافة القطاعات بصيغة PDF"
             >
               <FileDown className="w-4 h-4 text-white" />
-              <span>تصدير PDF</span>
+              <span>طباعة PDF احترافية</span>
             </button>
 
             {/* Export Excel */}
             <button
               onClick={onExport}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors shadow-xs"
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors shadow-xs cursor-pointer"
               title="تصدير جدول الأعمال الحالي إلى Excel"
             >
               <Download className="w-3.5 h-3.5 text-slate-300" />
@@ -125,9 +214,9 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Print Report */}
             <button
-              onClick={handlePrint}
-              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors shadow-xs"
-              title="طباعة التقرير الفوري"
+              onClick={onExportPdf || handlePrint}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+              title="فتح خيارات الطباعة الرسمية للتقرير"
             >
               <Printer className="w-3.5 h-3.5 text-amber-400" />
               <span>طباعة</span>

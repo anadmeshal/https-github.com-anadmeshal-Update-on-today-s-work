@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { WorkItem, ProjectMetadata, TableFilterState } from './types';
-import { fetchLiveSheetData, exportToExcel, API_URL } from './services/api';
-import { Header } from './components/Header';
+import { fetchLiveSheetData, exportToExcel, API_URL, cleanContractorName, formatProjectName } from './services/api';
+import { Header, LayoutWidthMode, ThemeMode } from './components/Header';
 import { KpiCards } from './components/KpiCards';
 import { FilterBar } from './components/FilterBar';
 import { WorksTable } from './components/WorksTable';
@@ -38,17 +38,51 @@ const STORAGE_KEY_ITEMS = 'app_work_items_v7_live_sheet';
 const STORAGE_KEY_META = 'app_work_metadata_v7_live_sheet';
 const STORAGE_KEY_URL = 'app_work_api_url_v7_live_sheet';
 
+/**
+ * Ensures all work items have strictly unique IDs and clean numeric values
+ */
+function sanitizeWorkItems(rawList: WorkItem[]): WorkItem[] {
+  if (!Array.isArray(rawList)) return [];
+  const seenIds = new Set<string>();
+  const sanitized: WorkItem[] = [];
+
+  rawList.forEach((it, idx) => {
+    if (!it || typeof it !== 'object') return;
+    let safeId = it.id ? String(it.id).trim() : `sec-${it.serialNumber || idx + 1}`;
+    if (seenIds.has(safeId)) {
+      safeId = `${safeId}-dup-${idx + 1}`;
+    }
+    seenIds.add(safeId);
+
+    // Normalize status strictly to user specification: 'مفتوح جاري العمل عليه' or 'مغلق مكتمل'
+    const rawStatus = String(it.status || '').trim();
+    const isClosed = rawStatus.includes('مغلق') || rawStatus.includes('مكتمل');
+    const safeStatus = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
+
+    sanitized.push({
+      ...it,
+      id: safeId,
+      status: safeStatus,
+      openDays: typeof it.openDays === 'number' ? Math.round(it.openDays) : it.openDays,
+    });
+  });
+
+  return sanitized;
+}
+
 export default function App() {
   const [apiUrl, setApiUrl] = useState<string>(() => {
     return localStorage.getItem(STORAGE_KEY_URL) || API_URL;
   });
   const [items, setItems] = useState<WorkItem[]>([]);
-  const [metadata, setMetadata] = useState<ProjectMetadata>({
-    projectName: 'عقد تنفيذ شبكات صرف صحي العوالى 2',
-    contractor: 'مقاولة / شركة نظم  البيئة للمقاولات',
-    date: '2026-09-07',
-    totalCount: 47,
-    openSectorsCount: 46,
+  const [metadata, setMetadata] = useState<ProjectMetadata>(() => {
+    return {
+      projectName: 'عقد تنفيذ شبكات صرف صحي العوالي 2 - الرياض',
+      contractor: 'شركة نظم البيئة',
+      date: '2026-09-07',
+      totalCount: 47,
+      openSectorsCount: 46,
+    };
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -76,6 +110,50 @@ export default function App() {
   const [chartViewMode, setChartViewMode] = useState<'line' | 'pie' | 'compare' | 'both'>('compare');
   const [isPdfExportOpen, setIsPdfExportOpen] = useState<boolean>(false);
 
+  // Layout width state: default 'comfortable' (عرض مناسب 1536px)
+  const [layoutWidth, setLayoutWidth] = useState<LayoutWidthMode>(() => {
+    const saved = localStorage.getItem('app_layout_width') as LayoutWidthMode;
+    return saved === 'full' || saved === 'compact' ? saved : 'comfortable';
+  });
+
+  const handleLayoutWidthChange = (mode: LayoutWidthMode) => {
+    setLayoutWidth(mode);
+    localStorage.setItem('app_layout_width', mode);
+  };
+
+  const containerWidthClass =
+    layoutWidth === 'full'
+      ? 'w-full px-4 sm:px-6 lg:px-8'
+      : layoutWidth === 'compact'
+      ? 'max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8'
+      : 'max-w-[1536px] w-full mx-auto px-4 sm:px-6 lg:px-8';
+
+  // Theme mode state: 'dark' (وضع ليلي) or 'light' (وضع فاتح)
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('app_theme') as ThemeMode;
+    return saved === 'light' || saved === 'dark' ? saved : 'dark';
+  });
+
+  const handleToggleTheme = () => {
+    const nextTheme: ThemeMode = theme === 'dark' ? 'light' : 'dark';
+    setTheme(nextTheme);
+    localStorage.setItem('app_theme', nextTheme);
+  };
+
+  useEffect(() => {
+    if (theme === 'light') {
+      document.documentElement.classList.add('light');
+      document.documentElement.classList.remove('dark');
+      document.body.classList.add('theme-light');
+      document.body.classList.remove('theme-dark');
+    } else {
+      document.documentElement.classList.add('dark');
+      document.documentElement.classList.remove('light');
+      document.body.classList.add('theme-dark');
+      document.body.classList.remove('theme-light');
+    }
+  }, [theme]);
+
   const handleExportPdf = () => {
     setIsPdfExportOpen(true);
   };
@@ -88,15 +166,17 @@ export default function App() {
       if (savedItems) {
         const raw = JSON.parse(savedItems);
         if (Array.isArray(raw)) {
-          const cleaned = raw.map((it: WorkItem) => ({
-            ...it,
-            openDays: typeof it.openDays === 'number' ? Math.round(it.openDays) : it.openDays,
-          }));
+          const cleaned = sanitizeWorkItems(raw);
           setItems(cleaned);
         }
       }
       if (savedMeta) {
-        setMetadata(JSON.parse(savedMeta));
+        const parsed = JSON.parse(savedMeta);
+        setMetadata({
+          ...parsed,
+          projectName: formatProjectName(parsed.projectName),
+          contractor: cleanContractorName(parsed.contractor),
+        });
       }
     } catch (e) {
       console.error('Failed to parse local storage', e);
@@ -116,17 +196,19 @@ export default function App() {
       setItems((prevItems) => {
         // If user made manual edits, preserve their custom edited rows
         if (prevItems.length > 0 && prevItems.some((i) => i.source === 'manual')) {
-          const manualMap = new Map(prevItems.filter(i => i.source === 'manual').map(i => [i.sector, i]));
-          const merged = result.items.map(item => {
-            const manual = manualMap.get(item.sector);
-            return manual || item;
+          const manualMap = new Map<string, WorkItem>();
+          prevItems.filter(i => i.source === 'manual').forEach(i => {
+            if (i.sector) manualMap.set(i.sector, i);
           });
-          localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(merged));
-          return merged;
+          const merged: WorkItem[] = result.items.map(item => manualMap.get(item.sector) || item);
+          const sanitized = sanitizeWorkItems(merged);
+          localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(sanitized));
+          return sanitized;
         }
 
-        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(result.items));
-        return result.items;
+        const sanitized = sanitizeWorkItems(result.items);
+        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(sanitized));
+        return sanitized;
       });
 
       setMetadata(result.metadata);
@@ -148,17 +230,18 @@ export default function App() {
 
   // Import from Excel
   const handleExcelImport = (newItems: WorkItem[], metaPartial?: Partial<ProjectMetadata>) => {
-    setItems(newItems);
+    const sanitized = sanitizeWorkItems(newItems);
+    setItems(sanitized);
     setHasDetailedColumns(true);
-    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(newItems));
+    localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(sanitized));
 
     if (metaPartial) {
       setMetadata((prev) => {
         const updated = {
           ...prev,
           ...metaPartial,
-          totalCount: newItems.length,
-          openSectorsCount: newItems.filter(
+          totalCount: sanitized.length,
+          openSectorsCount: sanitized.filter(
             (i) => i.status?.includes('مفتوح') || i.status?.includes('جاري')
           ).length,
         };
@@ -171,9 +254,10 @@ export default function App() {
   // Add new rows
   const handleAddRows = (newRows: WorkItem[]) => {
     setItems((prev) => {
-      const updated = [...prev, ...newRows];
-      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
-      return updated;
+      const combined = [...prev, ...newRows];
+      const sanitized = sanitizeWorkItems(combined);
+      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(sanitized));
+      return sanitized;
     });
   };
 
@@ -232,10 +316,12 @@ export default function App() {
         const q = filters.search.toLowerCase().trim();
         const matches =
           (item.sector && item.sector.toLowerCase().includes(q)) ||
+          (item.lineNo && item.lineNo.toLowerCase().includes(q)) ||
           (item.workDescription && item.workDescription.toLowerCase().includes(q)) ||
           (item.location && item.location.toLowerCase().includes(q)) ||
           (item.streetName && item.streetName.toLowerCase().includes(q)) ||
           (item.permit && item.permit.toLowerCase().includes(q)) ||
+          (item.digPermitNo && item.digPermitNo.toLowerCase().includes(q)) ||
           (item.status && item.status.toLowerCase().includes(q)) ||
           (item.duration && item.duration.toLowerCase().includes(q)) ||
           String(item.serialNumber).includes(q);
@@ -279,7 +365,9 @@ export default function App() {
   }, [items, filters, chartStatusFilter]);
 
   return (
-    <div className="min-h-screen bg-black text-slate-100 flex flex-col selection:bg-blue-900 selection:text-white font-sans">
+    <div className={`min-h-screen w-full flex flex-col selection:bg-blue-900 selection:text-white font-sans transition-colors duration-200 ${
+      theme === 'light' ? 'bg-slate-100 text-slate-900 theme-light' : 'bg-black text-slate-100 theme-dark'
+    }`}>
       {/* Header */}
       <Header
         metadata={metadata}
@@ -293,10 +381,15 @@ export default function App() {
         onOpenScriptHelper={() => setIsScriptHelperOpen(true)}
         lastUpdated={lastUpdated}
         hasDetailedColumns={hasDetailedColumns}
+        layoutWidth={layoutWidth}
+        onLayoutWidthChange={handleLayoutWidthChange}
+        containerWidthClass={containerWidthClass}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
       />
 
       {/* Main Content */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 print:py-0 print:px-0">
+      <main className={`flex-1 ${containerWidthClass} py-6 print:py-0 print:px-0`}>
         {/* Official Printable Report Header - Appears ONLY when printing */}
         <PrintReportHeader
           metadata={metadata}
@@ -478,6 +571,7 @@ export default function App() {
         {/* Primary High-Clarity Works Table */}
         <WorksTable
           items={filteredItems}
+          theme={theme}
           onEditItem={(item) => setEditingItem(item)}
           onDeleteItem={handleDeleteItem}
           onViewDetail={(item) => setSelectedDetailItem(item)}
@@ -493,10 +587,10 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 bg-slate-900/90 py-4 mt-8 print:hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+      <footer className="border-t border-slate-800 bg-slate-900/90 py-4 mt-8 print:hidden w-full">
+        <div className={`${containerWidthClass} flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400`}>
           <div>
-            عقد تنفيذ شبكات صرف صحي العوالى 2 • مقاولة شركة نظم  البيئة للمقاولات
+            {metadata.projectName} • {metadata.contractor}
           </div>
           <div className="flex items-center gap-3 font-mono">
             <a
@@ -516,9 +610,9 @@ export default function App() {
       <PdfExportModal
         isOpen={isPdfExportOpen}
         onClose={() => setIsPdfExportOpen(false)}
-        items={filteredItems.length > 0 ? filteredItems : items}
+        items={items}
         metadata={metadata}
-        autoStart={true}
+        autoStart={false}
       />
 
       <RawDataModal

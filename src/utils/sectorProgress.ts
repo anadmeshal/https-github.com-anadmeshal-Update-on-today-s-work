@@ -154,13 +154,10 @@ export function buildSectorProfiles(items: WorkItem[]): SectorProfile[] {
       ? Math.round(sItems.reduce((acc, it) => acc + (it.progressPercent || highestStage.progressPercent), 0) / sItems.length)
       : highestStage.progressPercent;
 
-    const statusCategory = classifyWorkStatus(firstItem);
-    const categoryLabel =
-      statusCategory === 'منجز'
-        ? 'منجز (أسفلت)'
-        : statusCategory === 'مفتوح'
-        ? 'مفتوح (رص سيفتي)'
-        : 'جاري (حفر/تمديد/دفان)';
+    const rawStatus = String(firstItem.status || '').trim();
+    const isClosed = rawStatus.includes('مغلق') || rawStatus.includes('مكتمل') || avgProgress === 100;
+    const statusCategory: WorkStatusCategory = isClosed ? 'منجز' : 'مفتوح';
+    const categoryLabel = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
 
     const dailyRate = maxDays > 0 ? Math.round((totalLength / maxDays) * 10) / 10 : totalLength;
 

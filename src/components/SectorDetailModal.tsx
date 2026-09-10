@@ -42,7 +42,7 @@ export const SectorDetailModal: React.FC<SectorDetailModalProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 mt-0.5">
-                عقد تنفيذ شبكات صرف صحي العوالى 2 • شركة نظم  البيئة للمقاولات
+                عقد تنفيذ شبكات صرف صحي العوالي 2 - الرياض • شركة نظم البيئة
               </p>
             </div>
           </div>
@@ -114,9 +114,18 @@ export const SectorDetailModal: React.FC<SectorDetailModalProps> = ({
             {/* Status */}
             <div className="p-3.5 rounded-xl bg-slate-950/70 border border-slate-800">
               <div className="text-xs font-bold text-slate-400 mb-1">الحالة:</div>
-              <span className="inline-block px-2.5 py-0.5 rounded-md text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">
-                {item.status || 'مفتوح (جاري العمل به)'}
-              </span>
+              {(() => {
+                const isClosed = (item.status || '').includes('مغلق') || (item.status || '').includes('مكتمل');
+                return (
+                  <span className={`inline-block px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                    isClosed
+                      ? 'bg-blue-950 text-blue-300 border border-blue-800'
+                      : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                  }`}>
+                    {isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه'}
+                  </span>
+                );
+              })()}
             </div>
 
             {/* Permit (فسح) */}

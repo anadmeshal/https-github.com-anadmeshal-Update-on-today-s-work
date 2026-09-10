@@ -72,8 +72,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="w-full py-2 px-3 text-xs bg-slate-950 border border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-200 font-medium cursor-pointer"
               >
                 <option value="" className="bg-slate-950 text-slate-200">كل القطاعات ({uniqueSectors.length})</option>
-                {uniqueSectors.map((sec) => (
-                  <option key={sec} value={sec} className="bg-slate-950 text-slate-200">
+                {uniqueSectors.map((sec, secIdx) => (
+                  <option key={`filter-sec-${sec}-${secIdx}`} value={sec} className="bg-slate-950 text-slate-200">
                     {sec}
                   </option>
                 ))}
@@ -90,8 +90,8 @@ export const FilterBar: React.FC<FilterBarProps> = ({
                 className="w-full py-2 px-3 text-xs bg-slate-950 border border-slate-700 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500 text-slate-200 font-medium cursor-pointer"
               >
                 <option value="" className="bg-slate-950 text-slate-200">كل الشوارع ({uniqueStreets.length})</option>
-                {uniqueStreets.map((st) => (
-                  <option key={st} value={st} className="bg-slate-950 text-slate-200">
+                {uniqueStreets.map((st, stIdx) => (
+                  <option key={`filter-st-${st}-${stIdx}`} value={st} className="bg-slate-950 text-slate-200">
                     {st}
                   </option>
                 ))}

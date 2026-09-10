@@ -22,17 +22,20 @@ interface ChartsViewProps {
 const COLORS = ['#059669', '#2563eb', '#d97706', '#dc2626', '#64748b'];
 
 export const ChartsView: React.FC<ChartsViewProps> = ({ items, metadata }) => {
-  // Sector Status breakdown
-  const openCount = items.filter(
-    (i) => i.status?.includes('مفتوح') || i.status?.includes('جاري')
-  ).length || metadata.openSectorsCount;
-
   const totalCount = items.length || metadata.totalCount;
-  const otherCount = Math.max(0, totalCount - openCount);
+
+  // Sector Status breakdown (مفتوح جاري العمل عليه مقابل مغلق مكتمل)
+  const openCount = items.filter(
+    (i) => !i.status?.includes('مغلق') && !i.status?.includes('مكتمل')
+  ).length;
+
+  const closedCount = items.filter(
+    (i) => i.status?.includes('مغلق') || i.status?.includes('مكتمل')
+  ).length;
 
   const statusData = [
-    { name: 'قطاعات مفتوحة (جاري العمل)', value: openCount },
-    { name: 'قطاعات مسجلة / أخرى', value: otherCount },
+    { name: 'مفتوح جاري العمل عليه', value: openCount },
+    { name: 'مغلق مكتمل', value: closedCount },
   ];
 
   // Streets breakdown
@@ -63,7 +66,7 @@ export const ChartsView: React.FC<ChartsViewProps> = ({ items, metadata }) => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <PieIcon className="w-4 h-4 text-emerald-400" />
-            <h3 className="text-sm font-bold text-white">حالة القطاعات (مفتوحة / مسجلة)</h3>
+            <h3 className="text-sm font-bold text-white">حالة القطاعات (مفتوح جاري العمل عليه / مغلق مكتمل)</h3>
           </div>
           <span className="text-xs text-slate-400">إجمالي {totalCount} قطاع</span>
         </div>

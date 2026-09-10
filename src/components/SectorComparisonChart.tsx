@@ -38,13 +38,16 @@ interface SectorComparisonChartProps {
   items: WorkItem[];
   metadata?: ProjectMetadata;
   onSelectSectorItem?: (item: WorkItem) => void;
+  theme?: 'light' | 'dark';
 }
 
 export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
   items,
   metadata,
   onSelectSectorItem,
+  theme = 'dark',
 }) => {
+  const isLight = theme === 'light';
   // 1. Build sector profiles from all current items
   const sectorProfiles = useMemo(() => {
     return buildSectorProfiles(items);
@@ -209,21 +212,31 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
   }
 
   return (
-    <div className="bg-slate-900/90 rounded-xl border border-slate-800 shadow-xl mb-5 overflow-hidden print:hidden">
+    <div
+      className={`rounded-2xl border mb-5 overflow-hidden print:hidden transition-all shadow-md ${
+        isLight
+          ? 'bg-white border-slate-200 text-slate-900'
+          : 'bg-slate-900/90 border-slate-800 text-white shadow-xl'
+      }`}
+    >
       {/* Top Header */}
-      <div className="px-5 py-4 border-b border-slate-800 bg-slate-950/80 flex flex-wrap items-center justify-between gap-4">
+      <div
+        className={`px-5 py-4 border-b flex flex-wrap items-center justify-between gap-4 ${
+          isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/80 border-slate-800'
+        }`}
+      >
         <div className="flex items-center gap-3">
           <div className="p-2.5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-xl shadow-xs">
             <ArrowLeftRight className="w-5 h-5" />
           </div>
           <div>
-            <h3 className="text-base font-extrabold text-white flex items-center gap-2">
+            <h3 className={`text-base font-extrabold flex items-center gap-2 ${isLight ? 'text-slate-900' : 'text-white'}`}>
               أداة مقارنة أداء ونسب إنجاز القطاعات
-              <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-indigo-950/80 text-indigo-300 border border-indigo-800">
+              <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${isLight ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-indigo-950/80 text-indigo-300 border-indigo-800'}`}>
                 مقارنة ثنائية تفاعلية
               </span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className={`text-xs mt-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
               حدد أي قطاعين عبر القوائم المنسدلة لتحليل التباين في نسب الإنجاز، مراحل العمل الميداني، والأطوال
             </p>
           </div>
@@ -231,40 +244,54 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
 
         {/* Quick Comparison Presets */}
         <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-          <span className="text-slate-400 font-medium">مقارنات مقترحة:</span>
+          <span className={isLight ? 'text-slate-600 font-medium' : 'text-slate-400 font-medium'}>مقارنات مقترحة:</span>
           <button
             onClick={handlePresetTopVsLowest}
-            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-700 shadow-sm transition-all cursor-pointer"
+            className={`px-2.5 py-1 rounded-lg border shadow-xs transition-all cursor-pointer font-bold ${
+              isLight
+                ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+            }`}
           >
             الأعلى vs الأقل إنجازاً
           </button>
           <button
             onClick={handlePresetLongest}
-            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-700 shadow-sm transition-all cursor-pointer"
+            className={`px-2.5 py-1 rounded-lg border shadow-xs transition-all cursor-pointer font-bold ${
+              isLight
+                ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+            }`}
           >
             أطول قطاعين
           </button>
           <button
             onClick={handlePresetAsphaltVsExcavation}
-            className="px-2.5 py-1 bg-slate-900 hover:bg-slate-800 text-slate-300 rounded-lg border border-slate-700 shadow-sm transition-all cursor-pointer"
+            className={`px-2.5 py-1 rounded-lg border shadow-xs transition-all cursor-pointer font-bold ${
+              isLight
+                ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+            }`}
           >
-            منجز أسفلت vs جاري حفر
+            مغلق مكتمل vs مفتوح جاري
           </button>
         </div>
       </div>
 
       {/* Dropdown Selectors Bar */}
-      <div className="p-4 sm:p-5 bg-slate-950/60 border-b border-slate-800">
+      <div className={`p-4 sm:p-5 border-b ${isLight ? 'bg-slate-50/60 border-slate-200' : 'bg-slate-950/60 border-slate-800'}`}>
         <div className="grid grid-cols-1 md:grid-cols-11 gap-3 items-center">
           {/* Dropdown 1: Sector A */}
           <div className="md:col-span-5 space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-blue-300 flex items-center gap-1.5">
+              <label className={`text-xs font-black flex items-center gap-1.5 ${isLight ? 'text-blue-900' : 'text-blue-300'}`}>
                 <span className="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></span>
                 القطاع الأول (القطاع أ):
               </label>
               {sectorA && (
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-blue-950 text-blue-300 border border-blue-800">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                  isLight ? 'bg-blue-100 text-blue-900 border-blue-200' : 'bg-blue-950 text-blue-300 border-blue-800'
+                }`}>
                   إنجاز: {sectorA.progressPercent}% • {sectorA.stage.shortName}
                 </span>
               )}
@@ -274,15 +301,19 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
               <select
                 value={selectedSectorAName}
                 onChange={(e) => setSelectedSectorAName(e.target.value)}
-                className="w-full bg-slate-900 border-2 border-blue-900/80 focus:border-blue-500 focus:ring-2 focus:ring-blue-900 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-100 shadow-sm cursor-pointer appearance-none text-right pr-4 pl-8"
+                className={`w-full border-2 rounded-xl px-3.5 py-2.5 text-xs font-bold shadow-sm cursor-pointer appearance-none text-right pr-4 pl-8 transition-colors ${
+                  isLight
+                    ? 'bg-white border-blue-300 text-slate-900 focus:border-blue-600 focus:ring-2 focus:ring-blue-100'
+                    : 'bg-slate-900 border-blue-900/80 text-slate-100 focus:border-blue-500 focus:ring-2 focus:ring-blue-900'
+                }`}
               >
-                {sectorProfiles.map((p) => (
-                  <option key={`opt-a-${p.sectorName}`} value={p.sectorName} className="bg-slate-950 text-slate-200">
+                {sectorProfiles.map((p, idx) => (
+                  <option key={`opt-a-${p.sectorName}-${idx}`} value={p.sectorName} className={isLight ? 'bg-white text-slate-900' : 'bg-slate-950 text-slate-200'}>
                     {p.displayName}
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-blue-400">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-blue-500">
                 <ArrowLeftRight className="w-4 h-4" />
               </div>
             </div>
@@ -293,21 +324,27 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
             <button
               onClick={handleSwap}
               title="تبديل القطاعين"
-              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 shadow-sm transition-all text-slate-300 active:scale-95 cursor-pointer flex items-center justify-center"
+              className={`p-2.5 rounded-xl border shadow-xs transition-all active:scale-95 cursor-pointer flex items-center justify-center ${
+                isLight
+                  ? 'bg-white hover:bg-slate-100 text-slate-800 border-slate-300'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+              }`}
             >
-              <ArrowLeftRight className="w-4 h-4 text-indigo-400" />
+              <ArrowLeftRight className="w-4 h-4 text-indigo-500" />
             </button>
           </div>
 
           {/* Dropdown 2: Sector B */}
           <div className="md:col-span-5 space-y-1.5">
             <div className="flex items-center justify-between">
-              <label className="text-xs font-black text-purple-300 flex items-center gap-1.5">
+              <label className={`text-xs font-black flex items-center gap-1.5 ${isLight ? 'text-purple-900' : 'text-purple-300'}`}>
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-500 inline-block"></span>
                 القطاع الثاني (القطاع ب):
               </label>
               {sectorB && (
-                <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-950 text-purple-300 border border-purple-800">
+                <span className={`text-[11px] font-bold px-2 py-0.5 rounded-md border ${
+                  isLight ? 'bg-purple-100 text-purple-900 border-purple-200' : 'bg-purple-950 text-purple-300 border-purple-800'
+                }`}>
                   إنجاز: {sectorB.progressPercent}% • {sectorB.stage.shortName}
                 </span>
               )}
@@ -317,15 +354,19 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
               <select
                 value={selectedSectorBName}
                 onChange={(e) => setSelectedSectorBName(e.target.value)}
-                className="w-full bg-slate-900 border-2 border-purple-900/80 focus:border-purple-500 focus:ring-2 focus:ring-purple-900 rounded-xl px-3.5 py-2.5 text-xs font-bold text-slate-100 shadow-sm cursor-pointer appearance-none text-right pr-4 pl-8"
+                className={`w-full border-2 rounded-xl px-3.5 py-2.5 text-xs font-bold shadow-sm cursor-pointer appearance-none text-right pr-4 pl-8 transition-colors ${
+                  isLight
+                    ? 'bg-white border-purple-300 text-slate-900 focus:border-purple-600 focus:ring-2 focus:ring-purple-100'
+                    : 'bg-slate-900 border-purple-900/80 text-slate-100 focus:border-purple-500 focus:ring-2 focus:ring-purple-900'
+                }`}
               >
-                {sectorProfiles.map((p) => (
-                  <option key={`opt-b-${p.sectorName}`} value={p.sectorName} className="bg-slate-950 text-slate-200">
+                {sectorProfiles.map((p, idx) => (
+                  <option key={`opt-b-${p.sectorName}-${idx}`} value={p.sectorName} className={isLight ? 'bg-white text-slate-900' : 'bg-slate-950 text-slate-200'}>
                     {p.displayName}
                   </option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-purple-400">
+              <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center px-3 text-purple-500">
                 <ArrowLeftRight className="w-4 h-4" />
               </div>
             </div>
@@ -337,40 +378,44 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
       {sectorA && sectorB && analysis && (
         <div className="p-4 sm:p-6 space-y-6">
           {/* 1. Executive Gap Headline Banner */}
-          <div className="p-4 rounded-xl border bg-slate-950/80 border-indigo-900/60 shadow-md">
+          <div className={`p-4 rounded-xl border shadow-sm ${
+            isLight ? 'bg-indigo-50/70 border-indigo-200' : 'bg-slate-950/80 border-indigo-900/60'
+          }`}>
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span className="text-xs font-black uppercase tracking-wider text-indigo-400">
+                  <Sparkles className="w-4 h-4 text-indigo-500 shrink-0" />
+                  <span className={`text-xs font-black uppercase tracking-wider ${isLight ? 'text-indigo-800' : 'text-indigo-400'}`}>
                     نتيجة تحليل مقارنة الأداء بين القطاعين
                   </span>
                 </div>
-                <h4 className="text-sm sm:text-base font-extrabold text-white">
+                <h4 className={`text-sm sm:text-base font-extrabold ${isLight ? 'text-slate-950' : 'text-white'}`}>
                   {analysis.summaryHeadline}
                 </h4>
-                <p className="text-xs text-slate-400 leading-relaxed max-w-3xl">
+                <p className={`text-xs leading-relaxed max-w-3xl ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                   {analysis.recommendation}
                 </p>
               </div>
 
               {/* Comparative Delta Badges */}
               <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-                <div className="bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 shadow-sm flex flex-col">
-                  <span className="text-[11px] text-slate-400 font-medium">فارق الإنجاز (أ - ب):</span>
+                <div className={`px-3 py-2 rounded-xl border shadow-xs flex flex-col ${
+                  isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+                }`}>
+                  <span className={`text-[11px] font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>فارق الإنجاز (أ - ب):</span>
                   <div className="flex items-center gap-1 mt-0.5">
                     {analysis.progressDiff > 0 ? (
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
+                      <TrendingUp className="w-4 h-4 text-blue-600" />
                     ) : analysis.progressDiff < 0 ? (
-                      <TrendingDown className="w-4 h-4 text-purple-400" />
+                      <TrendingDown className="w-4 h-4 text-purple-600" />
                     ) : null}
                     <span
                       className={`text-base font-black font-mono ${
                         analysis.progressDiff > 0
-                          ? 'text-blue-400'
+                          ? 'text-blue-600'
                           : analysis.progressDiff < 0
-                          ? 'text-purple-400'
-                          : 'text-slate-400'
+                          ? 'text-purple-600'
+                          : isLight ? 'text-slate-700' : 'text-slate-400'
                       }`}
                     >
                       {analysis.progressDiff > 0
@@ -382,11 +427,13 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
                   </div>
                 </div>
 
-                <div className="bg-slate-900 px-3 py-2 rounded-xl border border-slate-800 shadow-sm flex flex-col">
-                  <span className="text-[11px] text-slate-400 font-medium">فارق الطول:</span>
+                <div className={`px-3 py-2 rounded-xl border shadow-xs flex flex-col ${
+                  isLight ? 'bg-white border-slate-200' : 'bg-slate-900 border-slate-800'
+                }`}>
+                  <span className={`text-[11px] font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>فارق الطول:</span>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <Ruler className="w-4 h-4 text-slate-400" />
-                    <span className="text-base font-black font-mono text-slate-200">
+                    <Ruler className={`w-4 h-4 ${isLight ? 'text-slate-600' : 'text-slate-400'}`} />
+                    <span className={`text-base font-black font-mono ${isLight ? 'text-slate-950' : 'text-slate-200'}`}>
                       {Math.abs(analysis.lengthDiff)} م
                     </span>
                   </div>
@@ -396,84 +443,129 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
           </div>
 
           {/* 2. Side-by-Side Comparison Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
             {/* Sector A Card */}
-            <div className="rounded-xl border border-blue-900/70 bg-blue-950/20 p-4 space-y-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2 border-b border-blue-900/40 pb-3">
+            <div className={`rounded-2xl border-2 p-5 space-y-4 shadow-sm transition-all ${
+              isLight
+                ? 'bg-white border-blue-200 hover:border-blue-300'
+                : 'bg-slate-900/95 border-blue-900/70'
+            }`}>
+              <div className={`flex items-start justify-between gap-2 border-b pb-3.5 ${
+                isLight ? 'border-slate-200' : 'border-blue-900/40'
+              }`}>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
-                    <h4 className="text-base font-extrabold text-blue-300 font-mono">
+                    <h4 className={`text-lg font-black font-mono tracking-tight ${
+                      isLight ? 'text-blue-950' : 'text-blue-300'
+                    }`}>
                       {sectorA.sectorName}
                     </h4>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-800">
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                      isLight
+                        ? 'bg-blue-100 text-blue-900 border-blue-300'
+                        : 'bg-blue-950 text-blue-300 border border-blue-800'
+                    }`}>
                       القطاع أ
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className={`text-xs mt-1 font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                     {sectorA.streetName} {sectorA.lineNo ? `(خط ${sectorA.lineNo})` : ''}
                   </p>
                 </div>
 
-                <span
-                  className={`text-xs font-black px-2.5 py-1 rounded-lg border ${
-                    sectorA.statusCategory === 'منجز'
-                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                      : sectorA.statusCategory === 'مفتوح'
-                      ? 'bg-sky-950/80 text-sky-300 border-sky-800'
-                      : 'bg-amber-950/80 text-amber-300 border-amber-800'
-                  }`}
-                >
-                  {sectorA.categoryLabel}
-                </span>
+                {/* Status Badge: High Contrast & Unified Status */}
+                {(() => {
+                  const isClosed = sectorA.categoryLabel?.includes('مغلق') || sectorA.categoryLabel?.includes('مكتمل') || sectorA.progressPercent === 100;
+                  const label = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
+                  return (
+                    <span
+                      className={`text-xs font-black px-3 py-1.5 rounded-lg border shadow-xs flex items-center gap-1.5 whitespace-nowrap ${
+                        isClosed
+                          ? 'bg-blue-600 text-white border-blue-700'
+                          : 'bg-emerald-600 text-white border-emerald-700'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white shrink-0"></span>
+                      {label}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Progress Bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300">نسبة الإنجاز الميداني:</span>
-                  <span className="font-black font-mono text-sm text-blue-400">
+                  <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
+                    نسبة الإنجاز الميداني:
+                  </span>
+                  <span className={`font-black font-mono text-base ${isLight ? 'text-blue-700' : 'text-blue-400'}`}>
                     {sectorA.progressPercent}%
                   </span>
                 </div>
-                <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                <div className={`w-full h-3.5 rounded-full overflow-hidden p-0.5 border ${
+                  isLight ? 'bg-slate-200 border-slate-300' : 'bg-slate-950 border-slate-800'
+                }`}>
                   <div
-                    className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                    className="h-full bg-blue-600 rounded-full transition-all duration-500"
                     style={{ width: `${sectorA.progressPercent}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between items-center text-[11px] text-slate-400">
-                  <span>المرحلة: <strong className="text-slate-200">{sectorA.stage.stageName}</strong></span>
-                  <span className="font-mono">خطوة {sectorA.stage.stageOrder} من 9</span>
+                <div className={`flex justify-between items-center text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <span>
+                    المرحلة: <strong className={isLight ? 'text-slate-900 font-black' : 'text-slate-200'}>{sectorA.stage.stageName}</strong>
+                  </span>
+                  <span className={`font-mono font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                    خطوة {sectorA.stage.stageOrder} من 9
+                  </span>
                 </div>
               </div>
 
               {/* Metrics Grid */}
-              <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-blue-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">الطول الإجمالي:</span>
-                  <span className="font-bold font-mono text-white text-sm">
+              <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs">
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-blue-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    الطول الإجمالي:
+                  </span>
+                  <span className={`font-black font-mono text-sm block ${isLight ? 'text-slate-950' : 'text-white'}`}>
                     {sectorA.totalLengthMeters} م.ط
                   </span>
                 </div>
 
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-blue-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">مدة الفتح بالأيام:</span>
-                  <span className="font-bold font-mono text-white text-sm">
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-blue-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    مدة الفتح بالأيام:
+                  </span>
+                  <span className={`font-black font-mono text-sm block ${isLight ? 'text-slate-950' : 'text-white'}`}>
                     {Math.round(sectorA.openDays)} يوم
                   </span>
                 </div>
 
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-blue-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">معدل الإنجاز اليومي:</span>
-                  <span className="font-bold font-mono text-white text-sm">
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-blue-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    معدل الإنجاز اليومي:
+                  </span>
+                  <span className={`font-black font-mono text-sm block ${isLight ? 'text-slate-950' : 'text-white'}`}>
                     {sectorA.dailyRateMetersPerDay} م/يوم
                   </span>
                 </div>
 
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-blue-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">رقم إذن الحفر:</span>
-                  <span className="font-bold font-mono text-slate-300 text-xs truncate block" title={sectorA.digPermitNo || 'غير مسجل'}>
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-blue-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    رقم إذن الحفر:
+                  </span>
+                  <span
+                    className={`font-black font-mono text-xs truncate block ${isLight ? 'text-slate-800' : 'text-slate-300'}`}
+                    title={sectorA.digPermitNo || 'غير مسجل'}
+                  >
                     {sectorA.digPermitNo || 'غير مسجل'}
                   </span>
                 </div>
@@ -483,7 +575,11 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
               {onSelectSectorItem && sectorA.rawItems[0] && (
                 <button
                   onClick={() => onSelectSectorItem(sectorA.rawItems[0])}
-                  className="w-full py-1.5 px-3 bg-slate-900 hover:bg-blue-950 text-blue-300 text-xs font-bold rounded-lg border border-blue-900/60 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  className={`w-full py-2 px-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
+                    isLight
+                      ? 'bg-blue-50 hover:bg-blue-100 text-blue-900 border-blue-200'
+                      : 'bg-slate-950 hover:bg-blue-950 text-blue-300 border-blue-900/60'
+                  }`}
                 >
                   <span>عرض السجل في جدول الأعمال</span>
                 </button>
@@ -491,82 +587,127 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
             </div>
 
             {/* Sector B Card */}
-            <div className="rounded-xl border border-purple-900/70 bg-purple-950/20 p-4 space-y-4 shadow-sm">
-              <div className="flex items-start justify-between gap-2 border-b border-purple-900/40 pb-3">
+            <div className={`rounded-2xl border-2 p-5 space-y-4 shadow-sm transition-all ${
+              isLight
+                ? 'bg-white border-purple-200 hover:border-purple-300'
+                : 'bg-slate-900/95 border-purple-900/70'
+            }`}>
+              <div className={`flex items-start justify-between gap-2 border-b pb-3.5 ${
+                isLight ? 'border-slate-200' : 'border-purple-900/40'
+              }`}>
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-purple-500"></span>
-                    <h4 className="text-base font-extrabold text-purple-300 font-mono">
+                    <h4 className={`text-lg font-black font-mono tracking-tight ${
+                      isLight ? 'text-purple-950' : 'text-purple-300'
+                    }`}>
                       {sectorB.sectorName}
                     </h4>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800">
+                    <span className={`text-xs font-bold px-2.5 py-0.5 rounded-full border ${
+                      isLight
+                        ? 'bg-purple-100 text-purple-900 border-purple-300'
+                        : 'bg-purple-950 text-purple-300 border border-purple-800'
+                    }`}>
                       القطاع ب
                     </span>
                   </div>
-                  <p className="text-xs text-slate-400 mt-1">
+                  <p className={`text-xs mt-1 font-semibold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                     {sectorB.streetName} {sectorB.lineNo ? `(خط ${sectorB.lineNo})` : ''}
                   </p>
                 </div>
 
-                <span
-                  className={`text-xs font-black px-2.5 py-1 rounded-lg border ${
-                    sectorB.statusCategory === 'منجز'
-                      ? 'bg-emerald-950/80 text-emerald-300 border-emerald-800'
-                      : sectorB.statusCategory === 'مفتوح'
-                      ? 'bg-sky-950/80 text-sky-300 border-sky-800'
-                      : 'bg-amber-950/80 text-amber-300 border-amber-800'
-                  }`}
-                >
-                  {sectorB.categoryLabel}
-                </span>
+                {/* Status Badge: High Contrast & Unified Status */}
+                {(() => {
+                  const isClosed = sectorB.categoryLabel?.includes('مغلق') || sectorB.categoryLabel?.includes('مكتمل') || sectorB.progressPercent === 100;
+                  const label = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
+                  return (
+                    <span
+                      className={`text-xs font-black px-3 py-1.5 rounded-lg border shadow-xs flex items-center gap-1.5 whitespace-nowrap ${
+                        isClosed
+                          ? 'bg-blue-600 text-white border-blue-700'
+                          : 'bg-emerald-600 text-white border-emerald-700'
+                      }`}
+                    >
+                      <span className="w-2 h-2 rounded-full bg-white shrink-0"></span>
+                      {label}
+                    </span>
+                  );
+                })()}
               </div>
 
               {/* Progress Bar */}
               <div className="space-y-1.5">
                 <div className="flex justify-between items-center text-xs">
-                  <span className="font-bold text-slate-300">نسبة الإنجاز الميداني:</span>
-                  <span className="font-black font-mono text-sm text-purple-400">
+                  <span className={`font-bold ${isLight ? 'text-slate-800' : 'text-slate-300'}`}>
+                    نسبة الإنجاز الميداني:
+                  </span>
+                  <span className={`font-black font-mono text-base ${isLight ? 'text-purple-700' : 'text-purple-400'}`}>
                     {sectorB.progressPercent}%
                   </span>
                 </div>
-                <div className="w-full h-3 bg-slate-900 rounded-full overflow-hidden p-0.5 border border-slate-800">
+                <div className={`w-full h-3.5 rounded-full overflow-hidden p-0.5 border ${
+                  isLight ? 'bg-slate-200 border-slate-300' : 'bg-slate-950 border-slate-800'
+                }`}>
                   <div
-                    className="h-full bg-purple-500 rounded-full transition-all duration-500"
+                    className="h-full bg-purple-600 rounded-full transition-all duration-500"
                     style={{ width: `${sectorB.progressPercent}%` }}
                   ></div>
                 </div>
-                <div className="flex justify-between items-center text-[11px] text-slate-400">
-                  <span>المرحلة: <strong className="text-slate-200">{sectorB.stage.stageName}</strong></span>
-                  <span className="font-mono">خطوة {sectorB.stage.stageOrder} من 9</span>
+                <div className={`flex justify-between items-center text-xs ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                  <span>
+                    المرحلة: <strong className={isLight ? 'text-slate-900 font-black' : 'text-slate-200'}>{sectorB.stage.stageName}</strong>
+                  </span>
+                  <span className={`font-mono font-bold ${isLight ? 'text-slate-700' : 'text-slate-300'}`}>
+                    خطوة {sectorB.stage.stageOrder} من 9
+                  </span>
                 </div>
               </div>
 
               {/* Metrics Grid */}
-              <div className="grid grid-cols-2 gap-2 pt-2 text-xs">
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-purple-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">الطول الإجمالي:</span>
-                  <span className="font-bold font-mono text-white text-sm">
+              <div className="grid grid-cols-2 gap-2.5 pt-1 text-xs">
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-purple-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    الطول الإجمالي:
+                  </span>
+                  <span className={`font-black font-mono text-sm block ${isLight ? 'text-slate-950' : 'text-white'}`}>
                     {sectorB.totalLengthMeters} م.ط
                   </span>
                 </div>
 
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-purple-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">مدة الفتح بالأيام:</span>
-                  <span className="font-bold font-mono text-white text-sm">
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-purple-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    مدة الفتح بالأيام:
+                  </span>
+                  <span className={`font-black font-mono text-sm block ${isLight ? 'text-slate-950' : 'text-white'}`}>
                     {Math.round(sectorB.openDays)} يوم
                   </span>
                 </div>
 
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-purple-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">معدل الإنجاز اليومي:</span>
-                  <span className="font-bold font-mono text-white text-sm">
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-purple-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    معدل الإنجاز اليومي:
+                  </span>
+                  <span className={`font-black font-mono text-sm block ${isLight ? 'text-slate-950' : 'text-white'}`}>
                     {sectorB.dailyRateMetersPerDay} م/يوم
                   </span>
                 </div>
 
-                <div className="bg-slate-900/90 p-2.5 rounded-lg border border-purple-900/40 shadow-sm">
-                  <span className="text-slate-400 text-[11px] block">رقم إذن الحفر:</span>
-                  <span className="font-bold font-mono text-slate-300 text-xs truncate block" title={sectorB.digPermitNo || 'غير مسجل'}>
+                <div className={`p-3 rounded-xl border shadow-2xs ${
+                  isLight ? 'bg-slate-50 border-slate-200' : 'bg-slate-950 border-purple-900/40'
+                }`}>
+                  <span className={`text-[11px] font-bold block mb-0.5 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
+                    رقم إذن الحفر:
+                  </span>
+                  <span
+                    className={`font-black font-mono text-xs truncate block ${isLight ? 'text-slate-800' : 'text-slate-300'}`}
+                    title={sectorB.digPermitNo || 'غير مسجل'}
+                  >
                     {sectorB.digPermitNo || 'غير مسجل'}
                   </span>
                 </div>
@@ -576,7 +717,11 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
               {onSelectSectorItem && sectorB.rawItems[0] && (
                 <button
                   onClick={() => onSelectSectorItem(sectorB.rawItems[0])}
-                  className="w-full py-1.5 px-3 bg-slate-900 hover:bg-purple-950 text-purple-300 text-xs font-bold rounded-lg border border-purple-900/60 transition-all flex items-center justify-center gap-1 cursor-pointer"
+                  className={`w-full py-2 px-3 text-xs font-bold rounded-xl border transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs ${
+                    isLight
+                      ? 'bg-purple-50 hover:bg-purple-100 text-purple-900 border-purple-200'
+                      : 'bg-slate-950 hover:bg-purple-950 text-purple-300 border-purple-900/60'
+                  }`}
                 >
                   <span>عرض السجل في جدول الأعمال</span>
                 </button>
@@ -587,13 +732,15 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
           {/* 3. Visual Charts Grid: Metrics Bar Chart + Stage Milestones Stepper */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Chart A: Side-by-side Bar Chart */}
-            <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800">
+            <div className={`rounded-xl p-4 border shadow-xs ${
+              isLight ? 'bg-white border-slate-200' : 'bg-slate-950/60 border-slate-800'
+            }`}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                  <BarChart3 className="w-4 h-4 text-indigo-400" />
+                <h4 className={`text-xs font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                  <BarChart3 className="w-4 h-4 text-indigo-500" />
                   مقارنة المؤشرات الفنية المباشرة (أعمدة بيانية)
                 </h4>
-                <span className="text-[11px] text-slate-400">
+                <span className={`text-[11px] font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                   {sectorA.sectorName} مقابل {sectorB.sectorName}
                 </span>
               </div>
@@ -604,20 +751,20 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
                     data={metricsComparisonData}
                     margin={{ top: 15, right: 15, left: 10, bottom: 20 }}
                   >
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
+                    <CartesianGrid strokeDasharray="3 3" stroke={isLight ? '#e2e8f0' : '#334155'} vertical={false} />
                     <XAxis
                       dataKey="metric"
-                      stroke="#94a3b8"
+                      stroke={isLight ? '#64748b' : '#94a3b8'}
                       fontSize={11}
                       tickLine={false}
-                      axisLine={{ stroke: '#475569' }}
+                      axisLine={{ stroke: isLight ? '#cbd5e1' : '#475569' }}
                       dy={5}
                     />
                     <YAxis
-                      stroke="#94a3b8"
+                      stroke={isLight ? '#64748b' : '#94a3b8'}
                       fontSize={11}
                       tickLine={false}
-                      axisLine={{ stroke: '#475569' }}
+                      axisLine={{ stroke: isLight ? '#cbd5e1' : '#475569' }}
                     />
                     <Tooltip content={<CustomBarTooltip />} />
                     <Legend
@@ -650,18 +797,20 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
             </div>
 
             {/* Chart B: Construction Stages Comparative Progress Track */}
-            <div className="bg-slate-950/60 rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+            <div className={`rounded-xl p-4 border flex flex-col justify-between shadow-xs ${
+              isLight ? 'bg-white border-slate-200' : 'bg-slate-950/60 border-slate-800'
+            }`}>
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                    <Layers className="w-4 h-4 text-purple-400" />
+                  <h4 className={`text-xs font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+                    <Layers className="w-4 h-4 text-purple-500" />
                     مسار المراحل الإنشائية الـ 9 للقطاعين
                   </h4>
-                  <span className="text-[11px] text-slate-400 font-mono">
+                  <span className={`text-[11px] font-mono ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                     طبيعة تقدم الأعمال
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mb-3">
+                <p className={`text-[11px] mb-3 ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>
                   تتبع موضع كل قطاع في دورة حياة أعمال شبكات الصرف الصحي من رص السيفتي حتى إتمام الأسفلت:
                 </p>
 
@@ -677,7 +826,11 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
                       <div
                         key={`stage-${st.stageOrder}`}
                         className={`px-2.5 py-1.5 rounded-lg border text-xs flex items-center justify-between transition-all ${
-                          isSectorAHere || isSectorBHere
+                          isLight
+                            ? isSectorAHere || isSectorBHere
+                              ? 'bg-slate-100 border-slate-300 shadow-2xs font-black text-slate-900'
+                              : 'bg-slate-50 border-slate-200 text-slate-600'
+                            : isSectorAHere || isSectorBHere
                             ? 'bg-slate-900 border-slate-700 shadow-sm font-bold text-white'
                             : 'bg-slate-950/50 border-slate-800/80 text-slate-400'
                         }`}
@@ -689,12 +842,18 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
                                 ? 'bg-emerald-500 text-white'
                                 : isSectorAHere || isSectorBHere
                                 ? 'bg-indigo-600 text-white'
+                                : isLight
+                                ? 'bg-slate-200 text-slate-600 border border-slate-300'
                                 : 'bg-slate-800 text-slate-400 border border-slate-700'
                             }`}
                           >
                             {st.stageOrder}
                           </span>
-                          <span className={isSectorAHere || isSectorBHere ? 'text-white' : 'text-slate-400'}>
+                          <span className={
+                            isLight
+                              ? isSectorAHere || isSectorBHere ? 'text-slate-950 font-black' : 'text-slate-700 font-medium'
+                              : isSectorAHere || isSectorBHere ? 'text-white' : 'text-slate-400'
+                          }>
                             {st.stageName}
                           </span>
                         </div>
@@ -712,7 +871,7 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
                             </span>
                           )}
                           {!isSectorAHere && !isSectorBHere && isPassedByA && isPassedByB && (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                            <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
                           )}
                         </div>
                       </div>
@@ -724,16 +883,23 @@ export const SectorComparisonChart: React.FC<SectorComparisonChartProps> = ({
           </div>
 
           {/* 4. Detailed Engineering Insights Box */}
-          <div className="p-4 bg-slate-950/70 rounded-xl border border-slate-800 space-y-2">
-            <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-blue-400" />
+          <div className={`p-4 rounded-xl border space-y-2 shadow-xs ${
+            isLight ? 'bg-slate-50 border-slate-200 text-slate-900' : 'bg-slate-950/70 border-slate-800 text-slate-200'
+          }`}>
+            <h4 className={`text-xs font-bold flex items-center gap-1.5 ${isLight ? 'text-slate-900' : 'text-slate-200'}`}>
+              <Sparkles className="w-4 h-4 text-blue-500" />
               ملاحظات التحليل المقارن:
             </h4>
-            <ul className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs text-slate-300">
+            <ul className="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">
               {analysis.keyInsights.map((insight, idx) => (
-                <li key={`ins-${idx}`} className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 shadow-sm flex items-start gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 shrink-0"></span>
-                  <span className="leading-relaxed text-slate-300">{insight}</span>
+                <li
+                  key={`ins-${idx}`}
+                  className={`p-2.5 rounded-lg border shadow-xs flex items-start gap-2 ${
+                    isLight ? 'bg-white border-slate-200 text-slate-800' : 'bg-slate-900 border-slate-800 text-slate-300'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-1.5 shrink-0"></span>
+                  <span className="leading-relaxed font-medium">{insight}</span>
                 </li>
               ))}
             </ul>

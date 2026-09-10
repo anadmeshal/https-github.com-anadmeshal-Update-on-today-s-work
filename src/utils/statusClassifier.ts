@@ -17,13 +17,19 @@ export function classifyWorkStatus(item: Partial<WorkItem> | string): WorkStatus
   if (
     desc.includes('أسفلت') ||
     desc.includes('اسفلت') ||
-    desc.includes('سفلتة') ||
+    desc.includes('سفلت') ||
     desc.includes('ط1') ||
     desc.includes('ط2') ||
     desc.includes('طبقة أولى') ||
     desc.includes('طبقة ثانية') ||
     desc.includes('طبقة اولي') ||
-    desc.includes('طبقة ثانيه')
+    desc.includes('طبقة ثانيه') ||
+    desc.includes('mc-1') ||
+    desc.includes('mc1') ||
+    desc.includes('rc-') ||
+    desc.includes('كشط') ||
+    desc.includes('إعادة الوضع') ||
+    desc.includes('اعادة الوضع')
   ) {
     return 'منجز';
   }

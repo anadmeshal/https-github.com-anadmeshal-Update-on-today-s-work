@@ -5,39 +5,88 @@ import { WorkItem, ProjectMetadata } from '../types';
 export interface GeneratePdfOptions {
   items: WorkItem[];
   metadata: ProjectMetadata;
+  includeStats?: boolean;
+  includeSignatures?: boolean;
+  includeCharts?: boolean;
   onProgress?: (percent: number, message: string) => void;
 }
 
 /**
- * تقسيم العناصر إلى صفحات تتناسب تماماً مع مقاس A4 بالعرض (Landscape)
+ * تقسيم ديناميكي ذكي للعناصر حسب مقاسات صفحة A4 بالعرض (Landscape)
+ * يراعي بدقة وجود صفحة الرسومات البيانية أو الترويسة التنفيذية في الصفحة الأولى، ومصفوفة التواقيع في الصفحة الأخيرة
  */
-export function paginateItemsForPdf(items: WorkItem[]): WorkItem[][] {
-  const pages: WorkItem[][] = [];
-  if (items.length === 0) return [[]];
+export function paginateItemsForPdf(
+  items: WorkItem[],
+  options?: { includeStats?: boolean; includeSignatures?: boolean; includeCharts?: boolean }
+): WorkItem[][] {
+  const includeStats = options?.includeStats ?? true;
+  const includeSignatures = options?.includeSignatures ?? true;
+  const includeCharts = options?.includeCharts ?? false;
 
-  // إذا كان العدد قليل (حتى 13 عنصر) يكفي صفحة واحدة مع التواقيع
-  if (items.length <= 13) {
+  if (!items || items.length === 0) return [[]];
+
+  // إذا تم تفعيل صفحة الرسومات، فإن جدول الأعمال يبدأ من الصفحة التالية
+  if (includeCharts) {
+    const singleTablePageMax = includeSignatures ? 12 : 16;
+    if (items.length <= singleTablePageMax) {
+      return [items];
+    }
+
+    const pages: WorkItem[][] = [];
+    const middlePageCapacity = 16;
+    const lastPageCapacity = includeSignatures ? 11 : 16;
+    let currentIndex = 0;
+
+    while (currentIndex < items.length) {
+      const remaining = items.length - currentIndex;
+      if (remaining <= lastPageCapacity) {
+        pages.push(items.slice(currentIndex, items.length));
+        break;
+      } else if (remaining <= middlePageCapacity + lastPageCapacity) {
+        const half = Math.ceil(remaining / 2);
+        pages.push(items.slice(currentIndex, currentIndex + half));
+        currentIndex += half;
+        pages.push(items.slice(currentIndex, items.length));
+        break;
+      } else {
+        pages.push(items.slice(currentIndex, currentIndex + middlePageCapacity));
+        currentIndex += middlePageCapacity;
+      }
+    }
+    return pages;
+  }
+
+  // عند عدم تفعيل صفحة الرسومات المستقلة (الصفحة الأولى تشتمل على الترويسة ومؤشرات الـ KPIs)
+  const singlePageMax = includeSignatures ? (includeStats ? 10 : 13) : 16;
+  if (items.length <= singlePageMax) {
     return [items];
   }
 
-  // الصفحة الأولى: هيدر كامل + 15 عنصر
-  const page1Size = 15;
-  pages.push(items.slice(0, page1Size));
+  const pages: WorkItem[][] = [];
 
-  let currentIndex = page1Size;
+  // سعة الصفحة الأولى (مع الترويسة وشريط المؤشرات)
+  const page1Capacity = includeStats ? 12 : 14;
+  pages.push(items.slice(0, page1Capacity));
+
+  let currentIndex = page1Capacity;
+  const lastPageCapacity = includeSignatures ? 11 : 16;
+  const middlePageCapacity = 16;
 
   while (currentIndex < items.length) {
     const remaining = items.length - currentIndex;
 
-    // إذا كان المتبقي 14 أو أقل، نضعه في الصفحة الأخيرة مع التواقيع
-    if (remaining <= 14) {
+    if (remaining <= lastPageCapacity) {
+      pages.push(items.slice(currentIndex, items.length));
+      break;
+    } else if (remaining <= middlePageCapacity + lastPageCapacity) {
+      const half = Math.ceil(remaining / 2);
+      pages.push(items.slice(currentIndex, currentIndex + half));
+      currentIndex += half;
       pages.push(items.slice(currentIndex, items.length));
       break;
     } else {
-      // صفحة وسطية تتسع لـ 17 عنصر
-      const take = 17;
-      pages.push(items.slice(currentIndex, currentIndex + take));
-      currentIndex += take;
+      pages.push(items.slice(currentIndex, currentIndex + middlePageCapacity));
+      currentIndex += middlePageCapacity;
     }
   }
 
@@ -45,7 +94,7 @@ export function paginateItemsForPdf(items: WorkItem[]): WorkItem[][] {
 }
 
 /**
- * دالة توليد وتنزيل ملف PDF الفعلي
+ * دالة توليد وتنزيل ملف PDF عالي الدقة بمعايير هندسية معتمدة
  */
 export async function downloadReportPdf(
   pageElements: HTMLElement[],
@@ -68,45 +117,66 @@ export async function downloadReportPdf(
   for (let i = 0; i < totalPages; i++) {
     const pageEl = pageElements[i];
     if (onProgress) {
-      const p = Math.round(((i) / totalPages) * 90) + 5;
-      onProgress(p, `جاري معالجة الصفحة ${i + 1} من ${totalPages}...`);
+      const p = Math.round((i / totalPages) * 85) + 5;
+      onProgress(p, `جاري معالجة الصفحة ${i + 1} من ${totalPages} بدقة متناهية...`);
     }
 
     const canvas = await html2canvas(pageEl, {
-      scale: 2, // دقة عالية جداً
+      scale: 2.2, // دقة طباعة فائقة الوضوح (Retina Sharpness)
       useCORS: true,
+      allowTaint: true,
       logging: false,
       backgroundColor: '#ffffff',
       windowWidth: 1200,
+      imageTimeout: 15000,
       onclone: (clonedDoc) => {
-        // Ensure the cloned container and pages are visible with full opacity
+        // حماية تامة من تباعد الحروف العربية وتفككها
+        const style = clonedDoc.createElement('style');
+        style.innerHTML = `
+          * {
+            letter-spacing: normal !important;
+            word-spacing: normal !important;
+          }
+          .pdf-page-canvas h1, .pdf-page-canvas h2, .pdf-page-canvas h3, 
+          .pdf-page-canvas p, .pdf-page-canvas span, .pdf-page-canvas td, 
+          .pdf-page-canvas th, .pdf-page-canvas div {
+            letter-spacing: normal !important;
+            font-feature-settings: "liga" 1, "calt" 1 !important;
+          }
+        `;
+        clonedDoc.head.appendChild(style);
+
+        // ضمان ظهور الصفحة والخطوط بنسبة 100% داخل البيئة المستنسخة
         const clonedPages = clonedDoc.querySelectorAll('.pdf-page-canvas');
         clonedPages.forEach((cp) => {
-          (cp as HTMLElement).style.opacity = '1';
-          if (cp.parentElement) {
-            cp.parentElement.style.opacity = '1';
-            cp.parentElement.style.left = '0';
-            cp.parentElement.style.top = '0';
+          const el = cp as HTMLElement;
+          el.style.opacity = '1';
+          el.style.visibility = 'visible';
+          if (el.parentElement) {
+            el.parentElement.style.opacity = '1';
+            el.parentElement.style.visibility = 'visible';
+            el.parentElement.style.left = '0';
+            el.parentElement.style.top = '0';
           }
         });
       },
     });
 
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    const imgData = canvas.toDataURL('image/jpeg', 0.98);
 
     if (i > 0) {
       pdf.addPage('a4', 'landscape');
     }
 
-    // مقاس A4 بالعرض: 297mm عرض × 210mm ارتفاع
+    // مقاس A4 بالعرض القياسي العالمي: 297mm عرض × 210mm ارتفاع
     pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210, undefined, 'FAST');
   }
 
   if (onProgress) {
-    onProgress(98, 'جاري تنزيل ملف PDF...');
+    onProgress(95, 'جاري تجميع وحفظ ملف الـ PDF النهائي...');
   }
 
-  const cleanProject = (metadata.projectName || 'مشروع_شبكات_صرف_صحي_العوالى_2')
+  const cleanProject = (metadata.projectName || 'مشروع_شبكات_صرف_صحي_العوالي_2_الرياض')
     .replace(/[^\u0621-\u064Aa-zA-Z0-9_-]/g, '_')
     .slice(0, 45);
   const cleanDate = metadata.date || new Date().toISOString().split('T')[0];
@@ -115,7 +185,7 @@ export async function downloadReportPdf(
   pdf.save(fileName);
 
   if (onProgress) {
-    onProgress(100, 'تم تنزيل ملف PDF بنجاح!');
+    onProgress(100, 'تم إنشاء وحفظ ملف الـ PDF بنجاح!');
   }
 
   return fileName;

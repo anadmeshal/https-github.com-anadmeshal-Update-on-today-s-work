@@ -210,7 +210,7 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
                       const isHovered = activeIndex === index;
                       return (
                         <Cell
-                          key={`cell-${entry.name}`}
+                          key={`cell-${entry.name}-${index}`}
                           fill={entry.color}
                           stroke={isSelected ? '#38bdf8' : '#0f172a'}
                           strokeWidth={isSelected ? 3 : 1.5}
@@ -244,12 +244,12 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
 
           {/* Interactive Status Cards (Legend & Breakdown) */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {chartData.map((slice) => {
+            {chartData.map((slice, sIdx) => {
               const isSelected = selectedStatus === slice.name;
 
               return (
                 <button
-                  key={slice.name}
+                  key={`slice-${slice.name}-${sIdx}`}
                   onClick={() => {
                     if (onSelectStatus) {
                       onSelectStatus(isSelected ? '' : slice.name);

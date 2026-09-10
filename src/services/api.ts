@@ -24,6 +24,24 @@ function formatDateStr(val: any): string {
   return String(val).trim();
 }
 
+// دالة لتنظيف اسم المقاول بحذف كلمة "المقاولة" أو بادئة "مقاولة / "
+export function cleanContractorName(raw: string): string {
+  if (!raw) return 'شركة نظم البيئة';
+  return raw
+    .replace(/^مقاولة\s*[\/:\-]*\s*/gi, '')
+    .replace(/المقاولة/gi, '')
+    .replace(/للمقاولات/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim() || 'شركة نظم البيئة';
+}
+
+export function formatProjectName(raw: string): string {
+  if (!raw) return 'عقد تنفيذ شبكات صرف صحي العوالي 2 - الرياض';
+  const trimmed = raw.trim();
+  if (trimmed.includes('الرياض')) return trimmed;
+  return `${trimmed} - الرياض`;
+}
+
 export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResult> {
   const targetUrl = customUrl || API_URL;
   const response = await fetch(targetUrl, {
@@ -47,8 +65,8 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
   const openSectorsSheet = json.data['قطاعات مفتوحة'] || [];
 
   // 1. Extract real project metadata from DATA SHEET
-  let projectName = 'عقد تنفيذ شبكات صرف صحي العوالى 2';
-  let contractor = 'مقاولة / شركة نظم  البيئة للمقاولات';
+  let projectName = 'عقد تنفيذ شبكات صرف صحي العوالي 2 - الرياض';
+  let contractor = 'شركة نظم البيئة';
   let date = '2026-09-07';
   let totalOpenLengthNotice = 'إجمالي الأطوال المفتوحة';
 
@@ -57,8 +75,8 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
     const secondVal = Object.values(dataSheet[1] || {})[0];
     const thirdVal = Object.values(dataSheet[2] || {})[0];
 
-    if (typeof firstVal === 'string' && firstVal.trim()) projectName = firstVal.trim();
-    if (typeof secondVal === 'string' && secondVal.trim()) contractor = secondVal.trim();
+    if (typeof firstVal === 'string' && firstVal.trim()) projectName = formatProjectName(firstVal);
+    if (typeof secondVal === 'string' && secondVal.trim()) contractor = cleanContractorName(secondVal);
     if (typeof thirdVal === 'string' && thirdVal.trim()) {
       date = formatDateStr(thirdVal);
     }
@@ -75,6 +93,7 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
 
   if (validOpenRows.length > 0) {
     hasDetailedColumns = true;
+    const seenIds = new Set<string>();
     validOpenRows.forEach((r, idx) => {
       const serialNum = idx + 1;
       const sectorRaw = String(r['القطاع'] || '').trim();
@@ -95,8 +114,14 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
 
       const location = streetName ? `${streetName}${lineNo ? ` - خط ${lineNo}` : ''}` : lineNo;
 
+      let uniqueId = `sec-${serialNum}`;
+      if (seenIds.has(uniqueId)) {
+        uniqueId = `sec-${serialNum}-${idx + 1}`;
+      }
+      seenIds.add(uniqueId);
+
       items.push({
-        id: `sec-${serialNum}`,
+        id: uniqueId,
         serialNumber: serialNum,
         sector: sectorRaw || `قطاع ${serialNum}`,
         lineNo: lineNo || undefined,
@@ -110,7 +135,7 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
         digPermitNo: digPermit || undefined,
         digPermitDate: digDate || undefined,
         lengthMeters: lengthMeters,
-        status: 'مفتوح (جاري العمل به)',
+        status: 'مفتوح جاري العمل عليه',
         source: 'api',
         sheetOrigin: 'قطاعات مفتوحة',
         raw: r
@@ -135,6 +160,7 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
 
     if (Array.isArray(dataSheet) && dataSheet.length > 0) {
       let serialCounter = 1;
+      const seenFallbackIds = new Set<string>();
       dataSheet.forEach((row) => {
         const primaryVal = Object.values(row)[0];
         if (
@@ -154,11 +180,19 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
           const street = row['اسم الشارع'] || row['الشارع'] || '';
           const duration = row['مدة التنفيذ'] || row['المدة'] || '';
           const permit = row['الفسح'] || row['رقم الفسح'] || row['تصريح'] || '';
-          const status = row['الحالة'] || (isOpen ? 'مفتوح (جاري العمل به)' : 'جاري العمل');
+          const rawStatus = row['الحالة'] ? String(row['الحالة']) : (isOpen ? 'مفتوح جاري العمل عليه' : 'مفتوح جاري العمل عليه');
+          const isClosed = rawStatus.includes('مغلق') || rawStatus.includes('مكتمل');
+          const status = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
           const lengthMeters = row['الأطوال'] || row['الطول'] || undefined;
 
+          let uniqueId = `sec-${numVal}`;
+          if (seenFallbackIds.has(uniqueId)) {
+            uniqueId = `sec-${numVal}-${serialCounter}`;
+          }
+          seenFallbackIds.add(uniqueId);
+
           items.push({
-            id: `sec-${numVal}`,
+            id: uniqueId,
             serialNumber: numVal,
             sector: `قطاع ${numVal}`,
             workDescription: String(workDesc).trim(),
@@ -252,10 +286,10 @@ export function parseUploadedExcel(fileBuffer: ArrayBuffer): {
   for (let i = 0; i < Math.min(headerRowIndex >= 0 ? headerRowIndex : 5, rawRows.length); i++) {
     const line = rawRows[i].filter(Boolean).map(String).join(' ');
     if (line.includes('عقد') || line.includes('مشروع')) {
-      metadataPartial.projectName = line;
+      metadataPartial.projectName = formatProjectName(line);
     }
     if (line.includes('مقاولة') || line.includes('شركة')) {
-      metadataPartial.contractor = line;
+      metadataPartial.contractor = cleanContractorName(line);
     }
   }
 
@@ -289,10 +323,12 @@ export function parseUploadedExcel(fileBuffer: ArrayBuffer): {
       const street = colMap['streetName'] !== undefined ? String(row[colMap['streetName']]).trim() : '';
       const dur = colMap['duration'] !== undefined ? String(row[colMap['duration']]).trim() : '';
       const per = colMap['permit'] !== undefined ? String(row[colMap['permit']]).trim() : '';
-      const stat = colMap['status'] !== undefined ? String(row[colMap['status']]).trim() : 'مفتوح (جاري العمل به)';
+      const rawStat = colMap['status'] !== undefined ? String(row[colMap['status']]).trim() : '';
+      const isClosed = rawStat.includes('مغلق') || rawStat.includes('مكتمل');
+      const stat = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
 
       items.push({
-        id: `excel-${rIdx}-${serial}`,
+        id: `excel-${Date.now()}-${rIdx}-${serial}`,
         serialNumber: serial || rIdx + 1,
         sector: sector.startsWith('قطاع') ? sector : `قطاع ${sector}`,
         workDescription: desc,
@@ -316,7 +352,7 @@ export function parseUploadedExcel(fileBuffer: ArrayBuffer): {
       let dur = '';
       let per = '';
       let sec = `قطاع ${idx + 1}`;
-      let stat = 'مفتوح (جاري العمل به)';
+      let stat = 'مفتوح جاري العمل عليه';
 
       for (const [k, v] of entries) {
         const valStr = String(v).trim();
@@ -326,11 +362,13 @@ export function parseUploadedExcel(fileBuffer: ArrayBuffer): {
         else if (k.includes('مدة') || k.includes('تنفيذ')) dur = valStr;
         else if (k.includes('فسح') || k.includes('تصريح')) per = valStr;
         else if (k.includes('قطاع')) sec = valStr;
-        else if (k.includes('حالة')) stat = valStr;
+        else if (k.includes('حالة') || k.includes('حاله')) {
+          stat = (valStr.includes('مغلق') || valStr.includes('مكتمل')) ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
+        }
       }
 
       items.push({
-        id: `excel-obj-${idx}`,
+        id: `excel-obj-${Date.now()}-${idx}`,
         serialNumber: idx + 1,
         sector: sec,
         workDescription: desc,
@@ -363,7 +401,7 @@ export function exportToExcel(items: WorkItem[], projectName: string) {
     'رقم إذن الحفر': item.digPermitNo || '',
     'تاريخ إذن الحفر': item.digPermitDate || '',
     'الموقع': item.location || '',
-    'الحالة': item.status || 'مفتوح (جاري العمل به)'
+    'الحالة': ((item.status || '').includes('مغلق') || (item.status || '').includes('مكتمل')) ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه'
   }));
 
   const worksheet = XLSX.utils.json_to_sheet(exportData);
