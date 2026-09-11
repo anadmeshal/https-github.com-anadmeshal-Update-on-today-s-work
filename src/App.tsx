@@ -14,9 +14,8 @@ import { RawDataModal } from './components/RawDataModal';
 import { PrintReportHeader } from './components/PrintReportHeader';
 import { PrintReportFooter } from './components/PrintReportFooter';
 import { StatusPieChart } from './components/StatusPieChart';
-import { HistoricalPerformanceChart } from './components/HistoricalPerformanceChart';
-import { SectorComparisonChart } from './components/SectorComparisonChart';
 import { PdfExportModal } from './components/PdfExportModal';
+import { DeleteConfirmModal } from './components/DeleteConfirmModal';
 import { classifyWorkStatus } from './utils/statusClassifier';
 import { exportReportToPdf } from './utils/pdfExport';
 import { 
@@ -27,10 +26,7 @@ import {
   CheckCircle2,
   FileSpreadsheet,
   Code2,
-  TrendingUp,
   PieChart as PieChartIcon,
-  LayoutGrid,
-  ArrowLeftRight,
   FileDown
 } from 'lucide-react';
 
@@ -97,6 +93,7 @@ export default function App() {
   const [isRawDataOpen, setIsRawDataOpen] = useState<boolean>(false);
   const [editingItem, setEditingItem] = useState<WorkItem | null>(null);
   const [selectedDetailItem, setSelectedDetailItem] = useState<WorkItem | null>(null);
+  const [itemToDelete, setItemToDelete] = useState<WorkItem | null>(null);
 
   // Filters
   const [filters, setFilters] = useState<TableFilterState>({
@@ -107,7 +104,7 @@ export default function App() {
     status: '',
   });
   const [chartStatusFilter, setChartStatusFilter] = useState<string>('');
-  const [chartViewMode, setChartViewMode] = useState<'line' | 'pie' | 'compare' | 'both'>('compare');
+  const [showPieChart, setShowPieChart] = useState<boolean>(true);
   const [isPdfExportOpen, setIsPdfExportOpen] = useState<boolean>(false);
 
   // Layout width state: default 'comfortable' (عرض مناسب 1536px)
@@ -273,18 +270,32 @@ export default function App() {
     }
   };
 
-  // Delete item
-  const handleDeleteItem = (id: string) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا الصف؟')) {
-      setItems((prev) => {
-        const updated = prev.filter((item) => item.id !== id);
-        localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
-        return updated;
-      });
-      if (selectedDetailItem && selectedDetailItem.id === id) {
-        setSelectedDetailItem(null);
+  // Request Delete item (opens confirmation modal)
+  const handleRequestDeleteItem = (idOrItem: string | WorkItem) => {
+    if (typeof idOrItem === 'string') {
+      const found = items.find((i) => i.id === idOrItem);
+      if (found) {
+        setItemToDelete(found);
       }
+    } else {
+      setItemToDelete(idOrItem);
     }
+  };
+
+  // Perform confirmed deletion
+  const handleConfirmDelete = (id: string) => {
+    setItems((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      localStorage.setItem(STORAGE_KEY_ITEMS, JSON.stringify(updated));
+      return updated;
+    });
+    if (selectedDetailItem && selectedDetailItem.id === id) {
+      setSelectedDetailItem(null);
+    }
+    if (editingItem && editingItem.id === id) {
+      setEditingItem(null);
+    }
+    setItemToDelete(null);
   };
 
   // Unique lists for filters
@@ -486,83 +497,31 @@ export default function App() {
           totalAll={items.length}
         />
 
-        {/* Analytics & Charts Section Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 print:hidden">
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-bold text-slate-400">طريقة عرض الرسوم البيانية:</span>
-            <div className="flex items-center bg-slate-900 border border-slate-800 p-1 rounded-xl text-xs font-bold text-slate-300 shadow-sm">
-              <button
-                onClick={() => setChartViewMode('compare')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-                  chartViewMode === 'compare'
-                    ? 'bg-slate-800 text-indigo-300 border border-indigo-700/50 shadow-sm font-extrabold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <ArrowLeftRight className="w-4 h-4 text-indigo-400" />
-                <span>مقارنة قطاعين (Sector Comparison)</span>
-              </button>
-
-              <button
-                onClick={() => setChartViewMode('line')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-                  chartViewMode === 'line'
-                    ? 'bg-slate-800 text-blue-300 border border-blue-700/50 shadow-sm font-extrabold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <TrendingUp className="w-4 h-4 text-blue-400" />
-                <span>الأداء التاريخي (Line Chart)</span>
-              </button>
-
-              <button
-                onClick={() => setChartViewMode('pie')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-                  chartViewMode === 'pie'
-                    ? 'bg-slate-800 text-amber-300 border border-amber-700/50 shadow-sm font-extrabold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <PieChartIcon className="w-4 h-4 text-amber-400" />
-                <span>توزيع الحالات (Pie Chart)</span>
-              </button>
-
-              <button
-                onClick={() => setChartViewMode('both')}
-                className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
-                  chartViewMode === 'both'
-                    ? 'bg-slate-800 text-white border border-slate-700 shadow-sm font-extrabold'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                <LayoutGrid className="w-4 h-4 text-slate-300" />
-                <span>عرض شامل (كافة الرسوم)</span>
-              </button>
-            </div>
-          </div>
+        {/* Work Status Distribution Pie Chart Section */}
+        <div className="flex items-center justify-between gap-3 mb-3 print:hidden">
+          <button
+            onClick={() => setShowPieChart(!showPieChart)}
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
+              showPieChart
+                ? theme === 'light'
+                  ? 'bg-blue-100 text-blue-950 border-blue-300 shadow-xs'
+                  : 'bg-blue-950/80 text-blue-300 border-blue-700/60 shadow-xs'
+                : theme === 'light'
+                  ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-400 border-slate-800'
+            }`}
+            title="تبديل إظهار / إخفاء المخطط البياني لمراحل العمل الـ 5"
+          >
+            <PieChartIcon className="w-4 h-4 text-blue-500" />
+            <span>{showPieChart ? 'إخفاء مخطط مراحل العمل الـ 5' : 'عرض مخطط مراحل العمل الـ 5 (Pie Chart)'}</span>
+          </button>
         </div>
 
-        {/* 1. Sector-to-Sector Performance Comparison Tool */}
-        {(chartViewMode === 'compare' || chartViewMode === 'both') && (
-          <SectorComparisonChart
-            items={items}
-            metadata={metadata}
-            onSelectSectorItem={(item) => setSelectedDetailItem(item)}
-          />
-        )}
-
-        {/* 2. Historical Performance Line Chart */}
-        {(chartViewMode === 'line' || chartViewMode === 'both') && (
-          <HistoricalPerformanceChart
-            items={items}
-            metadata={metadata}
-          />
-        )}
-
-        {/* 3. Work Status Distribution Pie Chart */}
-        {(chartViewMode === 'pie' || chartViewMode === 'both') && (
+        {/* Work Status Distribution Pie Chart */}
+        {showPieChart && (
           <StatusPieChart
             items={items}
+            theme={theme}
             selectedStatus={chartStatusFilter}
             onSelectStatus={(status) => setChartStatusFilter(status)}
           />
@@ -573,7 +532,7 @@ export default function App() {
           items={filteredItems}
           theme={theme}
           onEditItem={(item) => setEditingItem(item)}
-          onDeleteItem={handleDeleteItem}
+          onDeleteItem={handleRequestDeleteItem}
           onViewDetail={(item) => setSelectedDetailItem(item)}
           onExportExcel={() => exportToExcel(filteredItems, metadata.projectName)}
           onExportPdf={handleExportPdf}
@@ -626,10 +585,15 @@ export default function App() {
       <SectorDetailModal
         isOpen={selectedDetailItem !== null}
         item={selectedDetailItem}
+        theme={theme}
         onClose={() => setSelectedDetailItem(null)}
         onEdit={(item) => {
           setSelectedDetailItem(null);
           setEditingItem(item);
+        }}
+        onDelete={(item) => {
+          setSelectedDetailItem(null);
+          handleRequestDeleteItem(item);
         }}
       />
 
@@ -651,6 +615,18 @@ export default function App() {
         item={editingItem}
         onClose={() => setEditingItem(null)}
         onSave={handleSaveEdit}
+        onDelete={(item) => {
+          setEditingItem(null);
+          handleRequestDeleteItem(item);
+        }}
+      />
+
+      <DeleteConfirmModal
+        isOpen={itemToDelete !== null}
+        item={itemToDelete}
+        theme={theme}
+        onClose={() => setItemToDelete(null)}
+        onConfirmDelete={handleConfirmDelete}
       />
 
       <ScriptHelperModal

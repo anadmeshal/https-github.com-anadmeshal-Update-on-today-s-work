@@ -47,9 +47,9 @@ export const KpiCards: React.FC<KpiCardsProps> = ({ items, metadata }) => {
     ? Math.round(totalDurationDays / itemsWithDuration.length) 
     : 0;
 
-  // 2. Completed sectors (أسفلت) vs Others (حفر / تمديد / دفان / سيفتي)
-  const completedEntries = itemsWithDuration.filter(e => classifyWorkStatus(e.item) === 'منجز');
-  const otherEntries = itemsWithDuration.filter(e => classifyWorkStatus(e.item) !== 'منجز');
+  // 2. Completed sectors (مرحلة 5: mc1 و rc2 واسفلت) vs Others (مراحل 1 إلى 4)
+  const completedEntries = itemsWithDuration.filter(e => classifyWorkStatus(e.item) === 'mc1 و rc2 واسفلت');
+  const otherEntries = itemsWithDuration.filter(e => classifyWorkStatus(e.item) !== 'mc1 و rc2 واسفلت');
 
   const avgDurationCompleted = completedEntries.length > 0
     ? Math.round(completedEntries.reduce((sum, e) => sum + e.days, 0) / completedEntries.length)

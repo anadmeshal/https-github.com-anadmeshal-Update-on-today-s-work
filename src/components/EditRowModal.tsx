@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Save, Edit3, Wrench, MapPin, Clock, FileCheck, Calendar } from 'lucide-react';
+import { X, Save, Edit3, Wrench, MapPin, Clock, FileCheck, Calendar, Trash2 } from 'lucide-react';
 import { WorkItem } from '../types';
 
 interface EditRowModalProps {
@@ -7,6 +7,7 @@ interface EditRowModalProps {
   item: WorkItem | null;
   onClose: () => void;
   onSave: (updatedItem: WorkItem) => void;
+  onDelete?: (item: WorkItem) => void;
 }
 
 export const EditRowModal: React.FC<EditRowModalProps> = ({
@@ -14,6 +15,7 @@ export const EditRowModal: React.FC<EditRowModalProps> = ({
   item,
   onClose,
   onSave,
+  onDelete,
 }) => {
   const [sector, setSector] = useState('');
   const [lineNo, setLineNo] = useState('');
@@ -280,21 +282,38 @@ export const EditRowModal: React.FC<EditRowModalProps> = ({
           </div>
 
           {/* Action buttons */}
-          <div className="pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-semibold transition-colors border border-slate-700 cursor-pointer"
-            >
-              إلغاء
-            </button>
-            <button
-              type="submit"
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-            >
-              <Save className="w-4 h-4" />
-              <span>حفظ البيانات</span>
-            </button>
+          <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+            {onDelete ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onDelete(item);
+                }}
+                className="px-3.5 py-2 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-900/50 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="حذف هذا الصف"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>حذف القطاع</span>
+              </button>
+            ) : <div />}
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-semibold transition-colors border border-slate-700 cursor-pointer"
+              >
+                إلغاء
+              </button>
+              <button
+                type="submit"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>حفظ البيانات</span>
+              </button>
+            </div>
           </div>
         </form>
       </div>

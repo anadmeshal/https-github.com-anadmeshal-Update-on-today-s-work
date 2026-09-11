@@ -11,17 +11,119 @@ export interface FetchResult {
   hasDetailedColumns: boolean;
 }
 
-function formatDateStr(val: any): string {
-  if (!val) return '';
+export function formatDateStr(val: any): string {
+  if (val === null || val === undefined || val === '') return '';
+  
+  if (typeof val === 'string') {
+    const str = val.trim();
+    if (!str || str === '`' || str === '-') return '';
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+      return str;
+    }
+    // ISO string like 2026-03-29T...
+    if (/^\d{4}-\d{2}-\d{2}T/.test(str)) {
+      return str.split('T')[0];
+    }
+    // Slash formats: YYYY/MM/DD or DD/MM/YYYY
+    const slashParts = str.split('/');
+    if (slashParts.length === 3) {
+      if (slashParts[0].length === 4) {
+        return `${slashParts[0]}-${slashParts[1].padStart(2, '0')}-${slashParts[2].padStart(2, '0')}`;
+      } else if (slashParts[2].length === 4) {
+        return `${slashParts[2]}-${slashParts[1].padStart(2, '0')}-${slashParts[0].padStart(2, '0')}`;
+      }
+    }
+  }
+
+  // Excel serial number (e.g. 40000 - 60000)
+  if (typeof val === 'number' && val > 30000 && val < 60000) {
+    const excelEpoch = new Date(Date.UTC(1899, 11, 30));
+    const d = new Date(excelEpoch.getTime() + val * 86400000);
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0];
+    }
+  }
+
   try {
     const d = new Date(val);
-    if (!isNaN(d.getTime())) {
+    if (!isNaN(d.getTime()) && d.getFullYear() > 2000 && d.getFullYear() < 2100) {
       return d.toISOString().split('T')[0];
     }
   } catch {
     // fallback
   }
+
   return String(val).trim();
+}
+
+/**
+ * Robust extractor for permit issue date from any row key
+ */
+export function extractPermitDate(row: any): string {
+  if (!row || typeof row !== 'object') return '';
+  // Check exact standard keys first
+  const candidates = [
+    'تارخ اصدار الفسح (ميلادي)',
+    'تاريخ اصدار الفسح (ميلادي)',
+    'تاريخ إصدار الفسح (ميلادي)',
+    'تاريخ اصدار الفسح',
+    'تاريخ إصدار الفسح',
+    'تارخ اصدار الفسح',
+    'تاريخ الفسح',
+    'تارخ الفسح',
+  ];
+  for (const cand of candidates) {
+    if (row[cand]) {
+      const formatted = formatDateStr(row[cand]);
+      if (formatted) return formatted;
+    }
+  }
+
+  // Fallback: search keys
+  const keys = Object.keys(row);
+  for (const k of keys) {
+    const norm = k.replace(/\s+/g, ' ').trim();
+    if (norm.includes('فسح') && (norm.includes('تاريخ') || norm.includes('تارخ') || norm.includes('اصدار'))) {
+      const formatted = formatDateStr(row[k]);
+      if (formatted) return formatted;
+    }
+  }
+  return '';
+}
+
+/**
+ * Robust extractor for excavation permit date from any row key
+ */
+export function extractDigPermitDate(row: any): string {
+  if (!row || typeof row !== 'object') return '';
+  const candidates = [
+    'تاريخ إذن الحفر \n( ميلادى)',
+    'تاريخ إذن الحفر \n(ميلادي)',
+    'تاريخ إذن الحفر (ميلادي)',
+    'تاريخ إذن الحفر ( ميلادى)',
+    'تاريخ إذن الحفر',
+    'تاريخ اذن الحفر',
+    'تاريخ الحفر',
+    'تارخ إذن الحفر',
+  ];
+  for (const cand of candidates) {
+    if (row[cand]) {
+      const formatted = formatDateStr(row[cand]);
+      if (formatted) return formatted;
+    }
+  }
+
+  // Fallback: search keys
+  const keys = Object.keys(row);
+  for (const k of keys) {
+    const norm = k.replace(/\s+/g, ' ').trim();
+    if ((norm.includes('حفر') || norm.includes('إذن')) && (norm.includes('تاريخ') || norm.includes('تارخ'))) {
+      const formatted = formatDateStr(row[k]);
+      if (formatted) return formatted;
+    }
+  }
+  return '';
 }
 
 // دالة لتنظيف اسم المقاول بحذف كلمة "المقاولة" أو بادئة "مقاولة / "
@@ -101,10 +203,10 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
       const lineNo = String(r['رقم الخط'] || '').trim();
       const workDesc = String(r['وصف العمل الحالى'] || r['وصف الأعمال'] || '').trim();
       const permitNo = String(r['رقم الفسح'] || '').trim();
-      const permitDate = formatDateStr(r['تارخ اصدار الفسح (ميلادي)'] || r['تاريخ اصدار الفسح'] || '');
+      const permitDate = extractPermitDate(r);
       const digPermit = String(r['رقم إذن الحفر'] || '').trim();
-      const digDate = formatDateStr(r['تاريخ إذن الحفر \n( ميلادى)'] || r['تاريخ إذن الحفر'] || '');
-      const lengthVal = Number(r['طول القطاع']);
+      const digDate = extractDigPermitDate(r);
+      const lengthVal = Number(r['طول القطاع'] || r['الطول']);
       const lengthMeters = !isNaN(lengthVal) && lengthVal > 0 ? lengthVal : undefined;
       if (lengthMeters) calculatedTotalOpenLength += lengthMeters;
 
@@ -301,11 +403,16 @@ export function parseUploadedExcel(fileBuffer: ArrayBuffer): {
       const norm = h.replace(/\s+/g, ' ').trim();
       if (norm === 'م' || norm.includes('مسلسل')) colMap['serial'] = colIdx;
       else if (norm.includes('قطاع')) colMap['sector'] = colIdx;
+      else if (norm.includes('خط')) colMap['lineNo'] = colIdx;
+      else if (norm.includes('شارع')) colMap['streetName'] = colIdx;
+      else if (norm.includes('طول') || norm.includes('أطوال')) colMap['length'] = colIdx;
       else if (norm.includes('وصف') || norm.includes('بيان')) colMap['workDescription'] = colIdx;
       else if (norm.includes('موقع')) colMap['location'] = colIdx;
-      else if (norm.includes('شارع')) colMap['streetName'] = colIdx;
-      else if (norm.includes('مدة') || norm.includes('تنفيذ')) colMap['duration'] = colIdx;
+      else if (norm.includes('مدة') || norm.includes('فتح')) colMap['duration'] = colIdx;
+      else if (norm.includes('تاريخ') && norm.includes('فسح')) colMap['permitDate'] = colIdx;
       else if (norm.includes('فسح') || norm.includes('تصريح')) colMap['permit'] = colIdx;
+      else if (norm.includes('تاريخ') && norm.includes('حفر')) colMap['digDate'] = colIdx;
+      else if (norm.includes('إذن') || norm.includes('اذن') || norm.includes('حفر')) colMap['digPermit'] = colIdx;
       else if (norm.includes('حالة')) colMap['status'] = colIdx;
     });
 
@@ -318,24 +425,40 @@ export function parseUploadedExcel(fileBuffer: ArrayBuffer): {
 
       const serial = colMap['serial'] !== undefined ? row[colMap['serial']] : rIdx + 1;
       const sector = colMap['sector'] !== undefined ? String(row[colMap['sector']]).trim() : `قطاع ${rIdx + 1}`;
+      const lineNo = colMap['lineNo'] !== undefined ? String(row[colMap['lineNo']]).trim() : undefined;
       const desc = colMap['workDescription'] !== undefined ? String(row[colMap['workDescription']]).trim() : '';
       const loc = colMap['location'] !== undefined ? String(row[colMap['location']]).trim() : '';
       const street = colMap['streetName'] !== undefined ? String(row[colMap['streetName']]).trim() : '';
       const dur = colMap['duration'] !== undefined ? String(row[colMap['duration']]).trim() : '';
       const per = colMap['permit'] !== undefined ? String(row[colMap['permit']]).trim() : '';
+      const perDate = colMap['permitDate'] !== undefined ? formatDateStr(row[colMap['permitDate']]) : undefined;
+      const digP = colMap['digPermit'] !== undefined ? String(row[colMap['digPermit']]).trim() : undefined;
+      const digD = colMap['digDate'] !== undefined ? formatDateStr(row[colMap['digDate']]) : undefined;
+      const lenVal = colMap['length'] !== undefined ? Number(row[colMap['length']]) : undefined;
+      const lengthMeters = lenVal && !isNaN(lenVal) ? lenVal : undefined;
+
+      const rawDays = parseFloat(dur.replace(/[^\d.]/g, ''));
+      const openDays = !isNaN(rawDays) ? Math.round(rawDays) : undefined;
+
       const rawStat = colMap['status'] !== undefined ? String(row[colMap['status']]).trim() : '';
       const isClosed = rawStat.includes('مغلق') || rawStat.includes('مكتمل');
       const stat = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
 
       items.push({
         id: `excel-${Date.now()}-${rIdx}-${serial}`,
-        serialNumber: serial || rIdx + 1,
+        serialNumber: Number(serial) || rIdx + 1,
         sector: sector.startsWith('قطاع') ? sector : `قطاع ${sector}`,
+        lineNo: lineNo || undefined,
         workDescription: desc,
-        location: loc,
+        location: loc || (street ? `${street}${lineNo ? ` - خط ${lineNo}` : ''}` : ''),
         streetName: street,
         duration: dur,
+        openDays: openDays,
         permit: per,
+        permitIssueDate: perDate,
+        digPermitNo: digP,
+        digPermitDate: digD,
+        lengthMeters: lengthMeters,
         status: stat,
         source: 'excel',
         sheetOrigin: targetSheetName

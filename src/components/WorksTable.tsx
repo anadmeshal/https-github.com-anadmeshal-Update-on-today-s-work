@@ -2,6 +2,11 @@ import React, { useState, useMemo } from 'react';
 import { WorkItem } from '../types';
 import { formatDays } from '../utils/formatters';
 import { 
+  classifyWorkStatus, 
+  STAGE_CATEGORIES, 
+  ORDERED_STAGES 
+} from '../utils/statusClassifier';
+import { 
   MapPin, 
   Clock, 
   FileCheck2, 
@@ -19,7 +24,9 @@ import {
   CheckCircle2,
   Plus,
   Printer,
-  FileDown
+  FileDown,
+  Calendar,
+  Columns
 } from 'lucide-react';
 
 interface WorksTableProps {
@@ -35,7 +42,7 @@ interface WorksTableProps {
   onOpenAddRow?: () => void;
 }
 
-type SortField = 'serialNumber' | 'sector' | 'lineNo' | 'workDescription' | 'location' | 'streetName' | 'lengthMeters' | 'duration' | 'openDays' | 'permit' | 'status';
+type SortField = 'serialNumber' | 'sector' | 'lineNo' | 'workDescription' | 'location' | 'streetName' | 'lengthMeters' | 'duration' | 'openDays' | 'permit' | 'permitIssueDate' | 'digPermitNo' | 'digPermitDate' | 'status';
 
 export const WorksTable: React.FC<WorksTableProps> = ({
   items,
@@ -52,11 +59,13 @@ export const WorksTable: React.FC<WorksTableProps> = ({
   const isLight = theme === 'light';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [stageFilter, setStageFilter] = useState('all');
   const [sortField, setSortField] = useState<SortField>('serialNumber');
   const [sortAsc, setSortAsc] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(0); // 0 means show all for full clarity
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [detailedDateColumns, setDetailedDateColumns] = useState(false);
 
   const openItemsCount = useMemo(() => {
     return items.filter(it => !it.status?.includes('مغلق') && !it.status?.includes('مكتمل')).length;
@@ -97,18 +106,26 @@ export const WorksTable: React.FC<WorksTableProps> = ({
     // Search filter
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
-      result = result.filter(item => 
-        String(item.serialNumber).includes(q) ||
-        (item.sector && item.sector.toLowerCase().includes(q)) ||
-        (item.lineNo && item.lineNo.toLowerCase().includes(q)) ||
-        (item.workDescription && item.workDescription.toLowerCase().includes(q)) ||
-        (item.location && item.location.toLowerCase().includes(q)) ||
-        (item.streetName && item.streetName.toLowerCase().includes(q)) ||
-        (item.duration && item.duration.toLowerCase().includes(q)) ||
-        (item.permit && item.permit.toLowerCase().includes(q)) ||
-        (item.digPermitNo && item.digPermitNo.toLowerCase().includes(q)) ||
-        (item.lengthMeters && String(item.lengthMeters).includes(q))
-      );
+      result = result.filter(item => {
+        const stage = classifyWorkStatus(item);
+        const stageTitle = STAGE_CATEGORIES[stage]?.title?.toLowerCase() || '';
+        return (
+          String(item.serialNumber).includes(q) ||
+          (item.sector && item.sector.toLowerCase().includes(q)) ||
+          (item.lineNo && item.lineNo.toLowerCase().includes(q)) ||
+          (item.workDescription && item.workDescription.toLowerCase().includes(q)) ||
+          (item.location && item.location.toLowerCase().includes(q)) ||
+          (item.streetName && item.streetName.toLowerCase().includes(q)) ||
+          (item.duration && item.duration.toLowerCase().includes(q)) ||
+          (item.permit && item.permit.toLowerCase().includes(q)) ||
+          (item.permitIssueDate && item.permitIssueDate.toLowerCase().includes(q)) ||
+          (item.digPermitNo && item.digPermitNo.toLowerCase().includes(q)) ||
+          (item.digPermitDate && item.digPermitDate.toLowerCase().includes(q)) ||
+          (item.lengthMeters && String(item.lengthMeters).includes(q)) ||
+          stage.toLowerCase().includes(q) ||
+          stageTitle.includes(q)
+        );
+      });
     }
 
     // Status filter
@@ -118,6 +135,11 @@ export const WorksTable: React.FC<WorksTableProps> = ({
         const itemStatus = isClosed ? 'مغلق مكتمل' : 'مفتوح جاري العمل عليه';
         return itemStatus === statusFilter;
       });
+    }
+
+    // Stage filter (مراحل العمل الـ 5)
+    if (stageFilter !== 'all') {
+      result = result.filter(item => classifyWorkStatus(item) === stageFilter);
     }
 
     // Sort
@@ -139,7 +161,7 @@ export const WorksTable: React.FC<WorksTableProps> = ({
     });
 
     return result;
-  }, [items, searchTerm, statusFilter, sortField, sortAsc]);
+  }, [items, searchTerm, statusFilter, stageFilter, sortField, sortAsc]);
 
   // Pagination
   const totalItems = filteredAndSortedItems.length;
@@ -215,10 +237,51 @@ export const WorksTable: React.FC<WorksTableProps> = ({
               <option value="مغلق مكتمل">مغلق مكتمل ({closedItemsCount})</option>
             </select>
           </div>
+
+          {/* Quick Stage Filter (المراحل الخمس) */}
+          <div className="flex items-center gap-1.5">
+            <select
+              value={stageFilter}
+              onChange={(e) => {
+                setStageFilter(e.target.value);
+                setCurrentPage(1);
+              }}
+              className={`text-xs rounded-lg px-2.5 py-2 font-bold focus:outline-hidden focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                isLight 
+                  ? 'bg-white border border-slate-300 text-slate-800' 
+                  : 'bg-slate-900 border border-slate-700 text-slate-200'
+              }`}
+            >
+              <option value="all">مراحل العمل الـ 5 (الكل)</option>
+              {ORDERED_STAGES.map((stg) => (
+                <option key={`stg-opt-${stg}`} value={stg}>
+                  {STAGE_CATEGORIES[stg].title}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {/* Action Controls */}
         <div className="flex items-center gap-2 text-xs">
+          {/* Toggle Detailed Date Columns */}
+          <button
+            onClick={() => setDetailedDateColumns(!detailedDateColumns)}
+            className={`px-3 py-1.5 rounded-lg font-bold flex items-center gap-1.5 transition-colors border cursor-pointer ${
+              detailedDateColumns
+                ? isLight
+                  ? 'bg-blue-100 text-blue-950 border-blue-400 shadow-xs'
+                  : 'bg-blue-950/90 text-blue-300 border-blue-600 shadow-xs'
+                : isLight
+                  ? 'bg-white hover:bg-slate-100 text-slate-700 border-slate-300'
+                  : 'bg-slate-900 hover:bg-slate-800 text-slate-300 border-slate-700'
+            }`}
+            title="فصل الفسح وإذن الحفر والتواريخ في أعمدة منفصلة"
+          >
+            <Columns className="w-3.5 h-3.5 text-blue-500" />
+            <span>{detailedDateColumns ? 'عرض التواريخ بأعمدة منفصلة' : 'فصل أعمدة التواريخ'}</span>
+          </button>
+
           {/* Page size toggle */}
           <div className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg border font-medium ${
             isLight 
@@ -409,7 +472,7 @@ export const WorksTable: React.FC<WorksTableProps> = ({
               {/* 7. مدة الفتح */}
               <th
                 onClick={() => handleSort('openDays')}
-                className={`py-3 px-3 font-black cursor-pointer transition-colors text-center min-w-[110px] ${
+                className={`py-3 px-3 font-black cursor-pointer transition-colors text-center min-w-[125px] ${
                   isLight ? 'border-l border-slate-300 hover:bg-slate-200/80 text-slate-900' : 'border-l border-slate-800 hover:bg-slate-900 text-slate-100'
                 }`}
               >
@@ -419,18 +482,47 @@ export const WorksTable: React.FC<WorksTableProps> = ({
                 </div>
               </th>
 
-              {/* 8. الفسح وإذن الحفر */}
-              <th
-                onClick={() => handleSort('permit')}
-                className={`py-3 px-3 font-black cursor-pointer transition-colors min-w-[150px] ${
-                  isLight ? 'border-l border-slate-300 hover:bg-slate-200/80 text-slate-900' : 'border-l border-slate-800 hover:bg-slate-900 text-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-1">
-                  <span>الفسح والتصاريح</span>
-                  <ArrowUpDown className={`w-3 h-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
-                </div>
-              </th>
+              {detailedDateColumns ? (
+                <>
+                  {/* 8a. الفسح وتاريخ الإصدار */}
+                  <th
+                    onClick={() => handleSort('permit')}
+                    className={`py-3 px-3 font-black cursor-pointer transition-colors min-w-[150px] ${
+                      isLight ? 'border-l border-slate-300 hover:bg-slate-200/80 text-slate-900' : 'border-l border-slate-800 hover:bg-slate-900 text-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>الفسح وتاريخ الإصدار</span>
+                      <ArrowUpDown className={`w-3 h-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
+                    </div>
+                  </th>
+
+                  {/* 8b. إذن الحفر وتاريخه */}
+                  <th
+                    onClick={() => handleSort('digPermitDate')}
+                    className={`py-3 px-3 font-black cursor-pointer transition-colors min-w-[150px] ${
+                      isLight ? 'border-l border-slate-300 hover:bg-slate-200/80 text-slate-900' : 'border-l border-slate-800 hover:bg-slate-900 text-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-1">
+                      <span>إذن الحفر وتاريخه</span>
+                      <ArrowUpDown className={`w-3 h-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
+                    </div>
+                  </th>
+                </>
+              ) : (
+                <th
+                  onClick={() => handleSort('permit')}
+                  className={`py-3 px-3 font-black cursor-pointer transition-colors min-w-[180px] ${
+                    isLight ? 'border-l border-slate-300 hover:bg-slate-200/80 text-slate-900' : 'border-l border-slate-800 hover:bg-slate-900 text-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-1">
+                    <span>الفسح والتصاريح والتواريخ</span>
+                    <ArrowUpDown className={`w-3 h-3 ${isLight ? 'text-slate-500' : 'text-slate-400'}`} />
+                  </div>
+                </th>
+              )}
 
               {/* 9. الحالة */}
               <th
@@ -544,77 +636,187 @@ export const WorksTable: React.FC<WorksTableProps> = ({
                       )}
                     </td>
 
-                    {/* 6. وصف العمل الحالي - High contrast & bold */}
+                    {/* 6. وصف العمل الحالي - مصنف بالمراحل الـ 5 */}
                     <td className={`py-3 px-3.5 ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
-                      {item.workDescription ? (
-                        <div className={`font-bold text-xs md:text-sm leading-relaxed flex items-center gap-2 ${
-                          isLight ? 'text-slate-900' : 'text-slate-100'
-                        }`}>
-                          <span className={`w-2 h-2 rounded-full shrink-0 ${
-                            item.workDescription.includes('أسفلت') ? 'bg-indigo-500' :
-                            item.workDescription.includes('حفر') ? 'bg-amber-500' :
-                            item.workDescription.includes('دفان') ? 'bg-stone-500' :
-                            item.workDescription.includes('تمديد') ? 'bg-emerald-500' :
-                            'bg-blue-500'
-                          }`}></span>
-                          <span className="font-bold">{item.workDescription}</span>
-                        </div>
-                      ) : (
-                        <span className={`text-xs italic ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>—</span>
-                      )}
+                      {(() => {
+                        const stage = classifyWorkStatus(item);
+                        const meta = STAGE_CATEGORIES[stage];
+                        return (
+                          <div className="flex flex-col gap-1.5 items-start">
+                            <span className={`inline-flex items-center gap-1.5 text-[10px] font-black px-2 py-0.5 rounded-md border shadow-2xs ${
+                              isLight 
+                                ? `${meta.bgColorLight} ${meta.borderColorLight} ${meta.textColorLight}` 
+                                : `${meta.bgColorDark} ${meta.borderColorDark} ${meta.textColorDark}`
+                            }`}>
+                              <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: meta.color }}></span>
+                              <span>{meta.title}</span>
+                            </span>
+                            {item.workDescription ? (
+                              <span className={`font-bold text-xs md:text-sm leading-relaxed ${isLight ? 'text-slate-900' : 'text-slate-100'}`}>
+                                {item.workDescription}
+                              </span>
+                            ) : (
+                              <span className={`text-xs italic ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>—</span>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </td>
 
                     {/* 7. مدة الفتح */}
                     <td className={`py-3 px-3 text-center ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
                       {item.openDays !== undefined ? (
-                        <div className={`inline-flex items-center gap-1 font-mono font-black text-xs px-2.5 py-1 rounded border shadow-xs ${
-                          isLight 
-                            ? 'bg-amber-100 text-amber-950 border-amber-300' 
-                            : 'bg-amber-950/80 text-amber-300 border-amber-800'
-                        }`}>
-                          <Clock className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-amber-700' : 'text-amber-400'}`} />
-                          <span>{Math.round(item.openDays)} يوم</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className={`inline-flex items-center gap-1 font-mono font-black text-xs px-2.5 py-1 rounded border shadow-xs ${
+                            isLight 
+                              ? 'bg-amber-100 text-amber-950 border-amber-300' 
+                              : 'bg-amber-950/80 text-amber-300 border-amber-800'
+                          }`}>
+                            <Clock className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-amber-700' : 'text-amber-400'}`} />
+                            <span>{Math.round(item.openDays)} يوم</span>
+                          </div>
+                          {item.digPermitDate && (
+                            <span className={`text-[10px] font-mono font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`} title="تاريخ بدء الحفر المسجل">
+                              بدء: {item.digPermitDate}
+                            </span>
+                          )}
                         </div>
                       ) : item.duration ? (
-                        <div className={`inline-flex items-center gap-1 font-mono font-black text-xs px-2.5 py-1 rounded border shadow-xs ${
-                          isLight 
-                            ? 'bg-amber-100 text-amber-950 border-amber-300' 
-                            : 'bg-amber-950/80 text-amber-300 border-amber-800'
-                        }`}>
-                          <Clock className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-amber-700' : 'text-amber-400'}`} />
-                          <span>{formatDays(item.duration)}</span>
+                        <div className="flex flex-col items-center gap-1">
+                          <div className={`inline-flex items-center gap-1 font-mono font-black text-xs px-2.5 py-1 rounded border shadow-xs ${
+                            isLight 
+                              ? 'bg-amber-100 text-amber-950 border-amber-300' 
+                              : 'bg-amber-950/80 text-amber-300 border-amber-800'
+                          }`}>
+                            <Clock className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-amber-700' : 'text-amber-400'}`} />
+                            <span>{formatDays(item.duration)}</span>
+                          </div>
+                          {item.digPermitDate && (
+                            <span className={`text-[10px] font-mono font-medium ${isLight ? 'text-slate-600' : 'text-slate-400'}`} title="تاريخ بدء الحفر المسجل">
+                              بدء: {item.digPermitDate}
+                            </span>
+                          )}
                         </div>
                       ) : (
                         <span className={isLight ? 'text-slate-400 text-xs' : 'text-slate-500 text-xs'}>—</span>
                       )}
                     </td>
 
-                    {/* 8. الفسح وإذن الحفر */}
-                    <td className={`py-3 px-3 ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
-                      <div className="flex flex-col gap-1 text-xs">
-                        {item.permit ? (
-                          <div className={`font-mono font-black flex items-center gap-1 ${
-                            isLight ? 'text-emerald-900' : 'text-emerald-300'
-                          }`} title="رقم الفسح">
-                            <FileCheck2 className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`} />
-                            <span>فسح: {item.permit}</span>
-                          </div>
-                        ) : null}
-                        {item.digPermitNo ? (
-                          <div className={`font-mono text-[11px] flex items-center gap-1 ${
-                            isLight ? 'text-slate-700' : 'text-slate-400'
-                          }`} title="رقم إذن الحفر">
-                            <span className={`font-sans font-bold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>إذن حفر:</span>
-                            <span className={`font-bold px-1.5 py-0.5 rounded font-mono ${
-                              isLight ? 'bg-slate-200 text-slate-900' : 'bg-slate-800 text-slate-200'
-                            }`}>{item.digPermitNo}</span>
-                          </div>
-                        ) : null}
-                        {!item.permit && !item.digPermitNo && (
-                          <span className={isLight ? 'text-slate-400 text-xs' : 'text-slate-500 text-xs'}>—</span>
-                        )}
-                      </div>
-                    </td>
+                    {detailedDateColumns ? (
+                      <>
+                        {/* 8a. الفسح وتاريخ الإصدار */}
+                        <td className={`py-3 px-3 ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
+                          {item.permit ? (
+                            <div className="flex flex-col gap-1 text-xs">
+                              <div className={`font-mono font-black flex items-center gap-1 ${
+                                isLight ? 'text-emerald-950' : 'text-emerald-300'
+                              }`} title="رقم الفسح">
+                                <FileCheck2 className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`} />
+                                <span>فسح: {item.permit}</span>
+                              </div>
+                              <div className={`text-[11px] font-mono flex items-center gap-1 ${
+                                item.permitIssueDate 
+                                  ? isLight ? 'text-emerald-800 font-bold' : 'text-emerald-400 font-bold'
+                                  : isLight ? 'text-slate-400' : 'text-slate-500'
+                              }`}>
+                                <Calendar className="w-3 h-3 shrink-0 opacity-70" />
+                                <span>{item.permitIssueDate ? item.permitIssueDate : 'غير مسجل بقاعدة البيانات'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className={isLight ? 'text-slate-400 text-xs' : 'text-slate-500 text-xs'}>—</span>
+                          )}
+                        </td>
+
+                        {/* 8b. إذن الحفر وتاريخه */}
+                        <td className={`py-3 px-3 ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
+                          {item.digPermitNo || item.digPermitDate ? (
+                            <div className="flex flex-col gap-1 text-xs">
+                              {item.digPermitNo ? (
+                                <div className={`font-mono text-[11px] flex items-center gap-1 ${
+                                  isLight ? 'text-slate-800' : 'text-slate-300'
+                                }`} title="رقم إذن الحفر">
+                                  <span className={`font-sans font-bold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>إذن:</span>
+                                  <span className={`font-bold px-1.5 py-0.5 rounded font-mono ${
+                                    isLight ? 'bg-slate-200 text-slate-900' : 'bg-slate-800 text-slate-200'
+                                  }`}>{item.digPermitNo}</span>
+                                </div>
+                              ) : null}
+                              <div className={`text-[11px] font-mono flex items-center gap-1 ${
+                                item.digPermitDate 
+                                  ? isLight ? 'text-indigo-900 font-bold' : 'text-indigo-300 font-bold'
+                                  : isLight ? 'text-slate-400' : 'text-slate-500'
+                              }`}>
+                                <Calendar className="w-3 h-3 shrink-0 opacity-70" />
+                                <span>{item.digPermitDate ? item.digPermitDate : 'غير مسجل بقاعدة البيانات'}</span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className={isLight ? 'text-slate-400 text-xs' : 'text-slate-500 text-xs'}>—</span>
+                          )}
+                        </td>
+                      </>
+                    ) : (
+                      <td className={`py-3 px-3 ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
+                        <div className="flex flex-col gap-1.5 text-xs">
+                          {/* الفسح */}
+                          {item.permit ? (
+                            <div className="flex flex-col gap-0.5">
+                              <div className={`font-mono font-black flex items-center gap-1 ${
+                                isLight ? 'text-emerald-950' : 'text-emerald-300'
+                              }`} title="رقم الفسح">
+                                <FileCheck2 className={`w-3.5 h-3.5 shrink-0 ${isLight ? 'text-emerald-700' : 'text-emerald-400'}`} />
+                                <span>فسح: {item.permit}</span>
+                              </div>
+                              {item.permitIssueDate ? (
+                                <div className={`text-[11px] font-mono flex items-center gap-1 mr-3.5 font-bold ${
+                                  isLight ? 'text-emerald-800' : 'text-emerald-400'
+                                }`}>
+                                  <Calendar className="w-3 h-3 shrink-0 opacity-75" />
+                                  <span>بتاريخ: {item.permitIssueDate}</span>
+                                </div>
+                              ) : (
+                                <span className={`text-[10px] mr-3.5 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  تاريخ الفسح: غير مسجل بقاعدة البيانات
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
+
+                          {/* إذن الحفر */}
+                          {item.digPermitNo || item.digPermitDate ? (
+                            <div className="flex flex-col gap-0.5 mt-0.5">
+                              {item.digPermitNo && (
+                                <div className={`font-mono text-[11px] flex items-center gap-1 ${
+                                  isLight ? 'text-slate-800' : 'text-slate-300'
+                                }`} title="رقم إذن الحفر">
+                                  <span className={`font-sans font-bold ${isLight ? 'text-slate-600' : 'text-slate-400'}`}>إذن حفر:</span>
+                                  <span className={`font-bold px-1.5 py-0.5 rounded font-mono ${
+                                    isLight ? 'bg-slate-200 text-slate-900' : 'bg-slate-800 text-slate-200'
+                                  }`}>{item.digPermitNo}</span>
+                                </div>
+                              )}
+                              {item.digPermitDate ? (
+                                <div className={`text-[11px] font-mono flex items-center gap-1 mr-1 font-bold ${
+                                  isLight ? 'text-indigo-900' : 'text-indigo-300'
+                                }`}>
+                                  <Calendar className="w-3 h-3 shrink-0 opacity-75" />
+                                  <span>بتاريخ: {item.digPermitDate}</span>
+                                </div>
+                              ) : (
+                                <span className={`text-[10px] mr-1 ${isLight ? 'text-slate-400' : 'text-slate-500'}`}>
+                                  تاريخ الإذن: غير مسجل بقاعدة البيانات
+                                </span>
+                              )}
+                            </div>
+                          ) : null}
+
+                          {!item.permit && !item.digPermitNo && !item.digPermitDate && (
+                            <span className={isLight ? 'text-slate-400 text-xs' : 'text-slate-500 text-xs'}>—</span>
+                          )}
+                        </div>
+                      </td>
+                    )}
 
                     {/* 9. الحالة */}
                     <td className={`py-3 px-2.5 text-center ${isLight ? 'border-l border-slate-200' : 'border-l border-slate-800'}`}>
