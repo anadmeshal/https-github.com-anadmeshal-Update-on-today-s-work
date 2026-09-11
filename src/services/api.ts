@@ -34,6 +34,14 @@ export function formatDateStr(val: any): string {
         return `${slashParts[2]}-${slashParts[1].padStart(2, '0')}-${slashParts[0].padStart(2, '0')}`;
       }
     }
+
+    // Dash formats: DD-MM-YYYY
+    const dashParts = str.split('-');
+    if (dashParts.length === 3) {
+      if (dashParts[2].length === 4) {
+        return `${dashParts[2]}-${dashParts[1].padStart(2, '0')}-${dashParts[0].padStart(2, '0')}`;
+      }
+    }
   }
 
   // Excel serial number (e.g. 40000 - 60000)
@@ -232,6 +240,8 @@ export async function fetchLiveSheetData(customUrl?: string): Promise<FetchResul
         location: location || '',
         duration: duration,
         openDays: openDays,
+        startDate: digDate || undefined,
+        todayDate: formatDateStr(r['تاريخ اليوم']) || undefined,
         permit: permitNo,
         permitIssueDate: permitDate || undefined,
         digPermitNo: digPermit || undefined,

@@ -168,7 +168,7 @@ export const StatusPieChart: React.FC<StatusPieChartProps> = ({
   };
 
   return (
-    <div className={`rounded-xl border shadow-xl mb-5 overflow-hidden print:hidden transition-colors ${
+    <div className={`rounded-xl border shadow-xl mb-5 overflow-hidden print:block print:border-slate-300 print:shadow-none print:break-inside-avoid print:mb-4 transition-colors ${
       isLight 
         ? 'bg-white border-slate-300' 
         : 'bg-slate-900/90 border-slate-800'

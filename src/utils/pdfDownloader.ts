@@ -17,60 +17,70 @@ export interface GeneratePdfOptions {
  */
 export function paginateItemsForPdf(
   items: WorkItem[],
-  options?: { includeStats?: boolean; includeSignatures?: boolean; includeCharts?: boolean }
+  options?: { 
+    includeStats?: boolean; 
+    includeSignatures?: boolean; 
+    includeCharts?: boolean;
+    rowsPerPage?: number;
+  }
 ): WorkItem[][] {
   const includeStats = options?.includeStats ?? true;
   const includeSignatures = options?.includeSignatures ?? true;
   const includeCharts = options?.includeCharts ?? false;
+  // سعة الأسطر الأساسية في كل صفحة (الافتراضي 10 أسطر لضمان عدم قص أي نص أو انقطاعه هندسياً)
+  const baseCapacity = Math.min(13, Math.max(7, options?.rowsPerPage ?? 10));
 
   if (!items || items.length === 0) return [[]];
 
-  // إذا تم تفعيل صفحة الرسومات، فإن جدول الأعمال يبدأ من الصفحة التالية
+  // إذا تم تفعيل صفحة الرسومات البيانية المستقلة (الصفحة 1):
   if (includeCharts) {
-    const singleTablePageMax = includeSignatures ? 12 : 16;
-    if (items.length <= singleTablePageMax) {
+    // صفحة التواقيع الأخيرة تأخذ مساحة تعادل نحو 2-3 أسطر
+    const lastPageCapacity = includeSignatures ? Math.max(5, baseCapacity - 3) : baseCapacity;
+
+    if (items.length <= lastPageCapacity) {
       return [items];
     }
 
     const pages: WorkItem[][] = [];
-    const middlePageCapacity = 16;
-    const lastPageCapacity = includeSignatures ? 11 : 16;
     let currentIndex = 0;
 
     while (currentIndex < items.length) {
       const remaining = items.length - currentIndex;
+
       if (remaining <= lastPageCapacity) {
         pages.push(items.slice(currentIndex, items.length));
         break;
-      } else if (remaining <= middlePageCapacity + lastPageCapacity) {
-        const half = Math.ceil(remaining / 2);
-        pages.push(items.slice(currentIndex, currentIndex + half));
-        currentIndex += half;
+      } else if (remaining <= baseCapacity + lastPageCapacity) {
+        // توزيع متوازن ومريح على الصفحتين الأخيرتين
+        const firstBatch = Math.min(baseCapacity, Math.ceil(remaining / 2));
+        pages.push(items.slice(currentIndex, currentIndex + firstBatch));
+        currentIndex += firstBatch;
         pages.push(items.slice(currentIndex, items.length));
         break;
       } else {
-        pages.push(items.slice(currentIndex, currentIndex + middlePageCapacity));
-        currentIndex += middlePageCapacity;
+        pages.push(items.slice(currentIndex, currentIndex + baseCapacity));
+        currentIndex += baseCapacity;
       }
     }
     return pages;
   }
 
-  // عند عدم تفعيل صفحة الرسومات المستقلة (الصفحة الأولى تشتمل على الترويسة ومؤشرات الـ KPIs)
-  const singlePageMax = includeSignatures ? (includeStats ? 10 : 13) : 16;
+  // عند عدم تفعيل صفحة الرسومات المستقلة (الصفحة الأولى تشتمل على الترويسة التنفيذية ومؤشرات الـ KPIs):
+  const page1Capacity = includeStats ? Math.max(5, baseCapacity - 3) : Math.max(6, baseCapacity - 1);
+  const lastPageCapacity = includeSignatures ? Math.max(5, baseCapacity - 3) : baseCapacity;
+
+  // إذا كان التقرير صفحة واحدة شاملة الترويسة والتواقيع
+  const singlePageMax = Math.max(4, baseCapacity - (includeStats ? 3 : 1) - (includeSignatures ? 3 : 0));
   if (items.length <= singlePageMax) {
     return [items];
   }
 
   const pages: WorkItem[][] = [];
 
-  // سعة الصفحة الأولى (مع الترويسة وشريط المؤشرات)
-  const page1Capacity = includeStats ? 12 : 14;
-  pages.push(items.slice(0, page1Capacity));
-
-  let currentIndex = page1Capacity;
-  const lastPageCapacity = includeSignatures ? 11 : 16;
-  const middlePageCapacity = 16;
+  // الصفحة الأولى
+  const firstBatchCount = Math.min(items.length, page1Capacity);
+  pages.push(items.slice(0, firstBatchCount));
+  let currentIndex = firstBatchCount;
 
   while (currentIndex < items.length) {
     const remaining = items.length - currentIndex;
@@ -78,15 +88,15 @@ export function paginateItemsForPdf(
     if (remaining <= lastPageCapacity) {
       pages.push(items.slice(currentIndex, items.length));
       break;
-    } else if (remaining <= middlePageCapacity + lastPageCapacity) {
-      const half = Math.ceil(remaining / 2);
-      pages.push(items.slice(currentIndex, currentIndex + half));
-      currentIndex += half;
+    } else if (remaining <= baseCapacity + lastPageCapacity) {
+      const firstBatch = Math.min(baseCapacity, Math.ceil(remaining / 2));
+      pages.push(items.slice(currentIndex, currentIndex + firstBatch));
+      currentIndex += firstBatch;
       pages.push(items.slice(currentIndex, items.length));
       break;
     } else {
-      pages.push(items.slice(currentIndex, currentIndex + middlePageCapacity));
-      currentIndex += middlePageCapacity;
+      pages.push(items.slice(currentIndex, currentIndex + baseCapacity));
+      currentIndex += baseCapacity;
     }
   }
 

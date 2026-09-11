@@ -20,10 +20,167 @@ import {
   MapPin,
   FileCheck,
   Building2,
-  Calendar
+  Calendar,
+  HardHat,
+  Pickaxe,
+  Boxes
 } from 'lucide-react';
 import { WorkItem, ProjectMetadata } from '../types';
 import { paginateItemsForPdf, downloadReportPdf } from '../utils/pdfDownloader';
+import { 
+  classifyWorkStatus, 
+  WorkStageCategory, 
+  STAGE_CATEGORIES, 
+  ORDERED_STAGES 
+} from '../utils/statusClassifier';
+
+function polarToCartesian(centerX: number, centerY: number, radius: number, angleInDegrees: number) {
+  const angleInRadians = ((angleInDegrees - 90) * Math.PI) / 180.0;
+  return {
+    x: centerX + radius * Math.cos(angleInRadians),
+    y: centerY + radius * Math.sin(angleInRadians),
+  };
+}
+
+function describeDonutSlice(
+  centerX: number,
+  centerY: number,
+  innerRadius: number,
+  outerRadius: number,
+  startAngle: number,
+  endAngle: number
+): string {
+  let adjustedEnd = endAngle;
+  if (adjustedEnd - startAngle >= 360) {
+    adjustedEnd = startAngle + 359.999;
+  }
+  if (adjustedEnd <= startAngle) {
+    adjustedEnd = startAngle + 0.1;
+  }
+
+  const startOuter = polarToCartesian(centerX, centerY, outerRadius, startAngle);
+  const endOuter = polarToCartesian(centerX, centerY, outerRadius, adjustedEnd);
+  const startInner = polarToCartesian(centerX, centerY, innerRadius, adjustedEnd);
+  const endInner = polarToCartesian(centerX, centerY, innerRadius, startAngle);
+
+  const arcSweep = adjustedEnd - startAngle <= 180 ? 0 : 1;
+
+  return [
+    `M ${startOuter.x} ${startOuter.y}`,
+    `A ${outerRadius} ${outerRadius} 0 ${arcSweep} 1 ${endOuter.x} ${endOuter.y}`,
+    `L ${startInner.x} ${startInner.y}`,
+    `A ${innerRadius} ${innerRadius} 0 ${arcSweep} 0 ${endInner.x} ${endInner.y}`,
+    'Z',
+  ].join(' ');
+}
+
+const getStageBadgeStyle = (stageNumber: number) => {
+  switch (stageNumber) {
+    case 1:
+      return { bg: '#f0f9ff', border: '#7dd3fc', text: '#0369a1' };
+    case 2:
+      return { bg: '#fffbeb', border: '#fcd34d', text: '#b45309' };
+    case 3:
+      return { bg: '#faf5ff', border: '#d8b4fe', text: '#6b21a8' };
+    case 4:
+      return { bg: '#f0fdfa', border: '#5eead4', text: '#0f766e' };
+    case 5:
+      return { bg: '#ecfdf5', border: '#6ee7b7', text: '#047857' };
+    default:
+      return { bg: '#f8fafc', border: '#cbd5e1', text: '#334155' };
+  }
+};
+
+const renderPdfStageIcon = (stageNumber: number, size = 16) => {
+  switch (stageNumber) {
+    case 1:
+      return <HardHat style={{ width: size, height: size, color: '#0284c7' }} />;
+    case 2:
+      return <Pickaxe style={{ width: size, height: size, color: '#f59e0b' }} />;
+    case 3:
+      return <Layers style={{ width: size, height: size, color: '#8b5cf6' }} />;
+    case 4:
+      return <Boxes style={{ width: size, height: size, color: '#0d9488' }} />;
+    case 5:
+      return <CheckCircle2 style={{ width: size, height: size, color: '#10b981' }} />;
+    default:
+      return <HardHat style={{ width: size, height: size, color: '#0284c7' }} />;
+  }
+};
+
+const renderPdfDonut = (
+  stages: Array<{ count: number; color: string; title: string }>,
+  total: number,
+  size = 190
+) => {
+  const cx = size / 2;
+  const cy = size / 2;
+  const outerR = size * 0.44;
+  const innerR = size * 0.27;
+
+  if (total === 0) {
+    return (
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle cx={cx} cy={cy} r={(outerR + innerR) / 2} fill="none" stroke="#e2e8f0" strokeWidth={outerR - innerR} />
+        <text x={cx} y={cy - 4} textAnchor="middle" dominantBaseline="middle" fontSize="22" fontWeight="900" fill="#64748b">0</text>
+        <text x={cx} y={cy + 16} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="bold" fill="#94a3b8">إجمالي القطاعات</text>
+      </svg>
+    );
+  }
+
+  let currentAngle = 0;
+  const activeSlices = stages.filter((s) => s.count > 0);
+  const hasMultiple = activeSlices.length > 1;
+  const gapAngle = hasMultiple ? 3 : 0;
+
+  const paths = stages.map((s, idx) => {
+    if (s.count <= 0) return null;
+    const sliceAngle = (s.count / total) * 360;
+    const startAngle = currentAngle + (hasMultiple ? gapAngle / 2 : 0);
+    const endAngle = currentAngle + sliceAngle - (hasMultiple ? gapAngle / 2 : 0);
+    currentAngle += sliceAngle;
+
+    const pathD = describeDonutSlice(cx, cy, innerR, outerR, startAngle, endAngle);
+
+    return (
+      <path
+        key={`donut-slice-${idx}`}
+        d={pathD}
+        fill={s.color}
+      />
+    );
+  });
+
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+      {paths}
+      <text
+        x={cx}
+        y={cy - 4}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="24"
+        fontWeight="900"
+        fill="#0f172a"
+        fontFamily='"Tajawal", Arial, sans-serif'
+      >
+        {total}
+      </text>
+      <text
+        x={cx}
+        y={cy + 16}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize="10"
+        fontWeight="bold"
+        fill="#64748b"
+        fontFamily='"Tajawal", Arial, sans-serif'
+      >
+        إجمالي القطاعات
+      </text>
+    </svg>
+  );
+};
 
 interface PdfExportModalProps {
   isOpen: boolean;
@@ -56,6 +213,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
   const [includeSignatures, setIncludeSignatures] = useState(true);
   const [consultantName, setConsultantName] = useState('دار الاستشارات الهندسية المشرف');
   const [contractNo, setContractNo] = useState('C-2024-AWL2-02');
+  const [detailedDateColumns, setDetailedDateColumns] = useState(false);
   const [activePreviewPage, setActivePreviewPage] = useState(0);
 
   // ==========================================
@@ -188,15 +346,14 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
     let highRiskCount = 0;
     let withPermitCount = 0;
 
-    // Categorization for charts (4 phases: Excavation, Pipes, Backfill, Asphalt)
-    let excavationCount = 0;
-    let excavationMeters = 0;
-    let pipesCount = 0;
-    let pipesMeters = 0;
-    let backfillCount = 0;
-    let backfillMeters = 0;
-    let asphaltCount = 0;
-    let asphaltMeters = 0;
+    // 5 Stages Breakdown matching UI and standard project workflow
+    const stageStats: Record<WorkStageCategory, { count: number; length: number }> = {
+      'رص سيفتي': { count: 0, length: 0 },
+      'حفر': { count: 0, length: 0 },
+      'تمديد': { count: 0, length: 0 },
+      'بحص اعلى ودفان': { count: 0, length: 0 },
+      'mc1 و rc2 واسفلت': { count: 0, length: 0 },
+    };
 
     // Duration categories
     let under15 = 0;
@@ -210,6 +367,12 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
     filteredItems.forEach((item) => {
       const len = typeof item.lengthMeters === 'number' && !isNaN(item.lengthMeters) ? item.lengthMeters : 0;
       totalLength += len;
+
+      const stage = classifyWorkStatus(item);
+      if (stageStats[stage]) {
+        stageStats[stage].count++;
+        stageStats[stage].length += len;
+      }
 
       const sectorKey = item.sector || 'أخرى';
       sectorLengthsMap[sectorKey] = (sectorLengthsMap[sectorKey] || 0) + len;
@@ -230,65 +393,26 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
       if (item.permit || item.digPermitNo) {
         withPermitCount++;
       }
+    });
 
-      const desc = (item.workDescription || '').toLowerCase();
+    const stagesBreakdown = ORDERED_STAGES.map((key) => {
+      const meta = STAGE_CATEGORIES[key];
+      const count = stageStats[key].count;
+      const length = stageStats[key].length;
+      const percentage = totalCount ? Math.round((count / totalCount) * 100) : 0;
 
-      // 1. Asphalt works (Priority check to prevent 'طبقة' or 'ط1/ط2' from misclassifying into backfill)
-      const isAsphalt = 
-        desc.includes('أسفلت') || 
-        desc.includes('اسفلت') || 
-        desc.includes('سفلت') || 
-        desc.includes('ط1') || 
-        desc.includes('ط2') || 
-        desc.includes('mc-1') || 
-        desc.includes('mc1') || 
-        desc.includes('rc-') || 
-        desc.includes('كشط') || 
-        desc.includes('إعادة الوضع') || 
-        desc.includes('اعادة الوضع');
-
-      // 2. Pipes works
-      const isPipes = 
-        !isAsphalt && (
-          desc.includes('مواسير') || 
-          desc.includes('تمديد') || 
-          desc.includes('خط') || 
-          desc.includes('أنابيب') || 
-          desc.includes('انابيب')
-        );
-
-      // 3. Backfill & base course works
-      const isBackfill = 
-        !isAsphalt && !isPipes && (
-          desc.includes('دفان') || 
-          desc.includes('ردم') || 
-          desc.includes('بحص') || 
-          desc.includes('رص')
-        );
-
-      // 4. Excavation works
-      const isExcavation = 
-        !isAsphalt && !isPipes && !isBackfill && (
-          desc.includes('حفر')
-        );
-
-      if (isAsphalt) {
-        asphaltCount++;
-        asphaltMeters += len;
-      } else if (isPipes) {
-        pipesCount++;
-        pipesMeters += len;
-      } else if (isBackfill) {
-        backfillCount++;
-        backfillMeters += len;
-      } else if (isExcavation) {
-        excavationCount++;
-        excavationMeters += len;
-      } else {
-        // Fallback for general unclassified open trenches
-        excavationCount++;
-        excavationMeters += len;
-      }
+      return {
+        key,
+        stageNumber: meta.stageNumber,
+        title: meta.title,
+        shortName: meta.shortName,
+        subTitle: meta.subTitle,
+        count,
+        percentage,
+        meters: Math.round(length * 10) / 10,
+        color: meta.color,
+        description: meta.scopeDescription,
+      };
     });
 
     const avgDuration = validDaysCount > 0 ? Math.round(totalOpenDays / validDaysCount) : 0;
@@ -307,13 +431,7 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
       highRiskCount,
       permitPercentage,
       withPermitCount,
-      // Categories breakdown (4 official phases without manholes)
-      workBreakdown: [
-        { label: 'أعمال الحفر وتجهيز المسار', count: excavationCount, meters: Math.round(excavationMeters), color: '#d97706', bg: '#fef3c7', barColor: '#d97706' },
-        { label: 'تمديد أنابيب الصرف الصحي', count: pipesCount, meters: Math.round(pipesMeters), color: '#2563eb', bg: '#dbeafe', barColor: '#2563eb' },
-        { label: 'أعمال الردم والدفان الهندسي', count: backfillCount, meters: Math.round(backfillMeters), color: '#059669', bg: '#d1fae5', barColor: '#059669' },
-        { label: 'أعمال الأسفلت وإعادة الوضع', count: asphaltCount, meters: Math.round(asphaltMeters), color: '#0f172a', bg: '#f1f5f9', barColor: '#1e293b' },
-      ],
+      stagesBreakdown,
       // Duration breakdown
       durationBreakdown: [
         { label: 'أقل من 15 يوم (طبيعي)', count: under15, color: '#16a34a', percent: totalCount ? Math.round((under15 / totalCount) * 100) : 0 },
@@ -585,8 +703,25 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                   className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 bg-slate-950 border-slate-700"
                 />
                 <div>
-                  <span className="text-slate-200 font-bold block">مصفوفة التواقيع والاعتمادات الرسمية</span>
+                  <span className="text-slate-200 font-bold block">مصفوفة التواقيع والاعتمادات</span>
                   <span className="text-[10px] text-slate-400">أختام وتواقيع: المقاول + الاستشاري + المالك</span>
+                </div>
+              </label>
+
+              {/* Detailed Date Columns Toggle */}
+              <label className="flex items-center gap-2.5 p-2.5 rounded-lg bg-slate-900 border border-slate-800 cursor-pointer hover:border-slate-700 transition-colors">
+                <input
+                  type="checkbox"
+                  checked={detailedDateColumns}
+                  onChange={(e) => setDetailedDateColumns(e.target.checked)}
+                  className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 bg-slate-950 border-slate-700"
+                />
+                <div>
+                  <span className="text-slate-200 font-bold block flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5 text-indigo-400" />
+                    عرض التواريخ في أعمدة منفصلة
+                  </span>
+                  <span className="text-[10px] text-slate-400">فصل عمود تاريخ إصدار الفسح وعمود تاريخ إذن وبدء الحفر</span>
                 </div>
               </label>
 
@@ -708,41 +843,46 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                     <div className="border-b border-slate-300 pb-2 flex items-center justify-between">
                       <div>
                         <p className="text-[11px] font-black text-slate-900">المملكة العربية السعودية • شركة المياه الوطنية</p>
-                        <p className="text-[9.5px] font-bold text-blue-900">{metadata.projectName} - لوحة التحليل البياني</p>
+                        <p className="text-[9.5px] font-bold text-blue-900">{metadata.projectName} - لوحة مراحل العمل الخمس</p>
                       </div>
-                      <span className="text-[9px] font-bold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">
-                        رسومات ومؤشرات رسمية
+                      <span className="text-[9px] font-bold text-blue-800 bg-blue-50 px-2 py-0.5 rounded border border-blue-300">
+                        توزيع مراحل العمل الخمس (Donut & Cards)
                       </span>
                     </div>
 
-                    {/* 4 Mini Charts Grid */}
-                    <div className="grid grid-cols-2 gap-2 text-[9px]">
-                      <div className="border border-slate-200 p-2 rounded bg-slate-50">
-                        <p className="font-black text-slate-800 mb-1.5">توزيع مراحل العمل المعتمدة:</p>
-                        <div className="space-y-1.5">
-                          {stats.workBreakdown.map((w, idx) => {
-                            const percent = stats.totalCount ? Math.round((w.count / stats.totalCount) * 100) : 0;
-                            return (
-                              <div key={idx}>
-                                <div className="flex items-center justify-between text-[8px] mb-0.5">
-                                  <span className="font-bold text-slate-700">{w.label}</span>
-                                  <strong className="font-mono text-slate-900">{w.count} قطاع ({percent}%) {w.meters > 0 ? `• ${w.meters}م` : ''}</strong>
-                                </div>
-                                <div className="h-1.5 w-full bg-slate-200 rounded-full overflow-hidden">
-                                  <div
-                                    className="h-full rounded-full transition-all"
-                                    style={{
-                                      width: w.count > 0 ? `${Math.max(percent, 4)}%` : '0%',
-                                      backgroundColor: w.barColor
-                                    }}
-                                  />
-                                </div>
-                              </div>
-                            );
-                          })}
+                    {/* 5 Stages Preview Box */}
+                    <div className="border border-slate-200 rounded-lg p-2.5 bg-slate-50">
+                      <div className="flex items-center justify-between border-b border-slate-200 pb-1.5 mb-2">
+                        <div className="flex items-center gap-1.5 font-bold text-slate-800 text-[10px]">
+                          <PieChart className="w-3.5 h-3.5 text-blue-600" />
+                          <span>توزيع مراحل العمل الخمس للقطاعات ({stats.totalCount} قطاع • {stats.totalLength.toLocaleString('ar-SA')} م.ط)</span>
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-3 gap-1.5 mb-2">
+                        {stats.stagesBreakdown.map((stage, sIdx) => {
+                          const badge = getStageBadgeStyle(stage.stageNumber);
+                          return (
+                            <div key={sIdx} className="bg-white border border-slate-200 rounded p-1.5 text-[9px] relative overflow-hidden">
+                              <div className="absolute top-0 right-0 left-0 h-1" style={{ backgroundColor: stage.color }} />
+                              <div className="flex items-center justify-between pt-1 mb-1">
+                                <span className="font-black text-slate-900">{stage.title}</span>
+                                <span className="text-[8px] font-mono px-1 rounded font-bold" style={{ backgroundColor: badge.bg, color: badge.text, border: `1px solid ${badge.border}` }}>
+                                  %{stage.percentage}
+                                </span>
+                              </div>
+                              <div className="flex items-baseline justify-between font-mono font-bold text-slate-800">
+                                <span>{stage.count} قطاع</span>
+                                <span className="text-[8px] text-slate-500">{stage.meters} م</span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Duration & Permits preview row */}
+                    <div className="grid grid-cols-2 gap-2 text-[9px]">
                       <div className="border border-slate-200 p-2 rounded bg-slate-50">
                         <p className="font-black text-slate-800 mb-1">تحليل فترات الفتح والمخاطر:</p>
                         <div className="space-y-1">
@@ -752,6 +892,26 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                               <strong className="font-mono">{d.count} قطاع ({d.percent}%)</strong>
                             </div>
                           ))}
+                        </div>
+                      </div>
+
+                      <div className="border border-slate-200 p-2 rounded bg-slate-50">
+                        <p className="font-black text-slate-800 mb-1">مؤشر التراخيص والفسوحات الميدانية:</p>
+                        <div className="flex items-center gap-3">
+                          <div className="text-center font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 rounded p-1.5 flex-shrink-0">
+                            <div className="text-sm font-mono">%{stats.permitPercentage}</div>
+                            <div className="text-[7.5px]">تصاريح سارية</div>
+                          </div>
+                          <div className="flex-1 text-[8px] space-y-1">
+                            <div className="flex justify-between text-slate-700 border-b border-slate-200 pb-0.5">
+                              <span>قطاعات بفسح/إذن:</span>
+                              <strong className="text-emerald-700 font-mono">{stats.withPermitCount} قطاع</strong>
+                            </div>
+                            <div className="flex justify-between text-slate-700">
+                              <span>قيد استخراج التصريح:</span>
+                              <strong className="text-red-700 font-mono">{stats.totalCount - stats.withPermitCount} قطاع</strong>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -780,23 +940,65 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                           <th className="p-1 border border-slate-300">الشارع</th>
                           <th className="p-1 border border-slate-300 text-center">الطول</th>
                           <th className="p-1 border border-slate-300">وصف العمل</th>
-                          <th className="p-1 border border-slate-300 text-center">المدة</th>
-                          <th className="p-1 border border-slate-300">الفسح</th>
+                          <th className="p-1 border border-slate-300 text-center">المدة والبدء</th>
+                          {detailedDateColumns ? (
+                            <>
+                              <th className="p-1 border border-slate-300">الفسح وتاريخه</th>
+                              <th className="p-1 border border-slate-300">إذن الحفر وتاريخه</th>
+                            </>
+                          ) : (
+                            <th className="p-1 border border-slate-300">الفسح / الإذن والتواريخ</th>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
-                        {(pageChunks[includeCharts ? activePreviewPage - 1 : activePreviewPage] || []).slice(0, 5).map((item, idx) => (
-                          <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
-                            <td className="p-1 border border-slate-200 text-center font-bold text-slate-600">{item.serialNumber}</td>
-                            <td className="p-1 border border-slate-200 font-bold text-slate-900">{item.sector}</td>
-                            <td className="p-1 border border-slate-200 text-center font-mono font-bold text-slate-800">{item.lineNo || '—'}</td>
-                            <td className="p-1 border border-slate-200 truncate max-w-[120px]">{item.streetName || '—'}</td>
-                            <td className="p-1 border border-slate-200 text-center font-bold text-blue-900">{item.lengthMeters ? `${item.lengthMeters}م` : '—'}</td>
-                            <td className="p-1 border border-slate-200 truncate max-w-[150px]">{item.workDescription || '—'}</td>
-                            <td className="p-1 border border-slate-200 text-center font-bold text-amber-900">{item.openDays !== undefined ? `${Math.round(item.openDays)}يوم` : '—'}</td>
-                            <td className="p-1 border border-slate-200 text-[8px] text-slate-600">{item.permit || item.digPermitNo || '—'}</td>
-                          </tr>
-                        ))}
+                        {(pageChunks[includeCharts ? activePreviewPage - 1 : activePreviewPage] || []).slice(0, 5).map((item, idx) => {
+                          const permitDate = item.permitIssueDate || (item.raw && (item.raw['تارخ اصدار الفسح (ميلادي)'] || item.raw['تاريخ اصدار الفسح (ميلادي)'] || item.raw['تاريخ الفسح']));
+                          const digDate = item.digPermitDate || item.startDate || (item.raw && (item.raw['تاريخ إذن الحفر \n( ميلادى)'] || item.raw['تاريخ إذن الحفر (ميلادي)'] || item.raw['تاريخ إذن الحفر']));
+
+                          return (
+                            <tr key={idx} className={idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}>
+                              <td className="p-1 border border-slate-200 text-center font-bold text-slate-600">{item.serialNumber}</td>
+                              <td className="p-1 border border-slate-200 font-bold text-slate-900">{item.sector}</td>
+                              <td className="p-1 border border-slate-200 text-center font-mono font-bold text-slate-800">{item.lineNo || '—'}</td>
+                              <td className="p-1 border border-slate-200 truncate max-w-[120px]">{item.streetName || '—'}</td>
+                              <td className="p-1 border border-slate-200 text-center font-bold text-blue-900">{item.lengthMeters ? `${item.lengthMeters}م` : '—'}</td>
+                              <td className="p-1 border border-slate-200 truncate max-w-[150px]">{item.workDescription || '—'}</td>
+                              <td className="p-1 border border-slate-200 text-center">
+                                <span className="font-bold text-amber-900 block">{item.openDays !== undefined ? `${Math.round(item.openDays)}يوم` : (item.duration || '—')}</span>
+                                {digDate && <span className="text-[7.5px] text-blue-800 font-semibold block font-mono">بدء: {digDate}</span>}
+                              </td>
+                              {detailedDateColumns ? (
+                                <>
+                                  <td className="p-1 border border-slate-200 text-[8px] text-slate-700">
+                                    {item.permit ? <span className="font-bold block">فسح: {item.permit}</span> : <span className="text-slate-400">—</span>}
+                                    {permitDate && <span className="text-emerald-700 font-semibold block font-mono text-[7px]">{permitDate}</span>}
+                                  </td>
+                                  <td className="p-1 border border-slate-200 text-[8px] text-slate-700">
+                                    {item.digPermitNo ? <span className="font-semibold block">إذن: {item.digPermitNo}</span> : (!digDate && <span className="text-slate-400">—</span>)}
+                                    {digDate && <span className="text-blue-700 font-semibold block font-mono text-[7px]">{digDate}</span>}
+                                  </td>
+                                </>
+                              ) : (
+                                <td className="p-1 border border-slate-200 text-[8px] text-slate-700">
+                                  {item.permit && (
+                                    <div>
+                                      <span className="font-bold">فسح: {item.permit}</span>
+                                      {permitDate && <span className="text-emerald-700 block font-mono text-[7.5px]">بتاريخ: {permitDate}</span>}
+                                    </div>
+                                  )}
+                                  {(item.digPermitNo || digDate) && (
+                                    <div className="mt-0.5">
+                                      {item.digPermitNo && <span>إذن: {item.digPermitNo} </span>}
+                                      {digDate && <span className="text-blue-700 font-mono text-[7.5px]">بتاريخ: {digDate}</span>}
+                                    </div>
+                                  )}
+                                  {!item.permit && !item.digPermitNo && !digDate && <span className="text-slate-400">—</span>}
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -939,125 +1141,179 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                 </div>
               </div>
 
-              {/* 4 OFFICIAL GRAPHICAL CHARTS (2x2 GRID) */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                {/* CHART 1: Work Phases Distribution */}
-                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '10px 12px', backgroundColor: '#ffffff' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
-                      ١. توزيع مراحل وطبيعة الأعمال (أعداد وأطوال)
-                    </h3>
-                    <span style={{ fontSize: '9px', color: '#64748b' }}>إجمالي: {stats.totalLength.toLocaleString('ar-SA')} م</span>
+              {/* THE 5 STAGES DISTRIBUTION DASHBOARD PANEL (MATCHING UI & USER IMAGE) */}
+              <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '8px', backgroundColor: '#ffffff', overflow: 'hidden', marginBottom: '10px' }}>
+                {/* Header bar */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', borderBottom: '1.5px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0369a1' }}>
+                      <PieChart style={{ width: '16px', height: '16px' }} />
+                    </div>
+                    <div>
+                      <h3 style={{ fontSize: '12.5px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
+                        توزيع مراحل العمل الخمس للقطاعات{' '}
+                        <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
+                          ({stats.totalCount} قطاع • {stats.totalLength.toLocaleString('ar-SA')} م.ط)
+                        </span>
+                      </h3>
+                      <p style={{ fontSize: '9px', color: '#64748b', margin: '2px 0 0 0', letterSpacing: 'normal' }}>
+                        تقسيم مراحل التنفيذ الميداني: 1- رص سيفتي • 2- حفر • 3- تمديد • 4- بحص اعلى ودفان • 5- mc1 و rc2 واسفلت
+                      </p>
+                    </div>
                   </div>
+                  <span style={{ fontSize: '9px', fontWeight: 800, color: '#0369a1', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', padding: '2px 8px', borderRadius: '4px' }}>
+                    توزيع معتمد للمشروع
+                  </span>
+                </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    {stats.workBreakdown.map((item, idx) => {
-                      const percent = stats.totalCount ? Math.round((item.count / stats.totalCount) * 100) : 0;
+                {/* Body: 5 Cards Grid on right, Donut on left */}
+                <div style={{ display: 'flex', alignItems: 'stretch', padding: '10px 12px', gap: '12px' }}>
+                  {/* Right side: 5 Cards Grid */}
+                  <div style={{ flex: 1, display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                    {stats.stagesBreakdown.map((stage, sIdx) => {
+                      const badge = getStageBadgeStyle(stage.stageNumber);
                       return (
-                        <div key={idx}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 800, marginBottom: '2px' }}>
-                            <span style={{ color: '#334155' }}>{item.label}</span>
-                            <span style={{ color: '#0f172a' }}>
-                              <strong>{item.count}</strong> قطاع ({percent}%) {item.meters > 0 && `• ${item.meters.toLocaleString('ar-SA')}م`}
-                            </span>
+                        <div
+                          key={sIdx}
+                          style={{
+                            border: '1.5px solid #cbd5e1',
+                            borderRadius: '8px',
+                            padding: '8px 10px',
+                            backgroundColor: '#ffffff',
+                            position: 'relative',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'space-between',
+                            minHeight: '100px',
+                          }}
+                        >
+                          {/* Top colored line indicator */}
+                          <div style={{ position: 'absolute', top: 0, right: 0, left: 0, height: '4px', backgroundColor: stage.color }} />
+
+                          <div>
+                            {/* Header of card: Title + Dot and Icon */}
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', paddingTop: '2px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                <span style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: stage.color, display: 'inline-block' }} />
+                                <span style={{ fontSize: '11px', fontWeight: 900, color: '#0f172a' }}>{stage.title}</span>
+                              </div>
+                              {renderPdfStageIcon(stage.stageNumber, 15)}
+                            </div>
+
+                            {/* Metric count + Percentage Badge */}
+                            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: '4px' }}>
+                              <div style={{ display: 'flex', alignItems: 'baseline', gap: '4px' }}>
+                                <span style={{ fontSize: '19px', fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
+                                  {stage.count}
+                                </span>
+                                <span style={{ fontSize: '9.5px', fontWeight: 800, color: '#64748b' }}>قطاع</span>
+                              </div>
+
+                              <span
+                                style={{
+                                  fontSize: '10px',
+                                  fontWeight: 900,
+                                  padding: '1px 6px',
+                                  borderRadius: '4px',
+                                  backgroundColor: badge.bg,
+                                  color: badge.text,
+                                  border: `1px solid ${badge.border}`,
+                                  fontFamily: 'monospace',
+                                }}
+                              >
+                                %{stage.percentage}
+                              </span>
+                            </div>
+
+                            {/* Subtitle description */}
+                            <p style={{ fontSize: '8.5px', color: '#64748b', margin: '0 0 4px 0', lineHeight: 1.25 }}>
+                              {stage.subTitle}
+                            </p>
                           </div>
-                          {/* Visual progress bar */}
-                          <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                            <div style={{ height: '100%', width: item.count > 0 ? `${Math.max(percent, 3)}%` : '0%', backgroundColor: item.barColor, borderRadius: '4px' }}></div>
+
+                          {/* Bottom footer of card: Stage length */}
+                          <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '9px' }}>
+                            <span style={{ color: '#64748b', fontWeight: 700 }}>طول المرحلة:</span>
+                            <span style={{ fontWeight: 900, color: '#0f172a', fontFamily: 'monospace' }}>
+                              {stage.meters.toLocaleString('ar-SA')} م
+                            </span>
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
 
-                {/* CHART 2: Duration & Aging Risk Analysis */}
-                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '10px 12px', backgroundColor: '#ffffff' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
-                      ٢. تصنيف مخاطر مدد الفتح وأعمار الحفريات
+                  {/* Left side: Donut Chart matching screenshot */}
+                  <div style={{ width: '235px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderRight: '1.5px solid #e2e8f0', paddingRight: '10px' }}>
+                    {renderPdfDonut(stats.stagesBreakdown, stats.totalCount, 185)}
+                    <span style={{ fontSize: '9px', fontWeight: 700, color: '#64748b', marginTop: '6px', textAlign: 'center' }}>
+                      توزيع نسب المراحل الخمس من إجمالي القطاعات
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECONDARY ANALYTICAL PANELS ROW */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', gap: '10px' }}>
+                {/* Duration & Aging Risk Analysis */}
+                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '8px 12px', backgroundColor: '#ffffff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '6px' }}>
+                    <h3 style={{ fontSize: '10.5px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
+                      تصنيف مخاطر مدد الفتح وأعمار الحفريات
                     </h3>
-                    <span style={{ fontSize: '9px', color: stats.criticalCount > 0 ? '#b91c1c' : '#16a34a', fontWeight: 800 }}>
-                      {stats.criticalCount} قطاع متجاوز
+                    <span style={{ fontSize: '8.5px', color: stats.criticalCount > 0 ? '#b91c1c' : '#16a34a', fontWeight: 800 }}>
+                      {stats.criticalCount} قطاع متجاوز (&gt;30 يوم)
                     </span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                     {stats.durationBreakdown.map((item, idx) => (
                       <div key={idx}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9px', fontWeight: 800, marginBottom: '2px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5px', fontWeight: 800, marginBottom: '2px' }}>
                           <span style={{ color: item.color }}>● {item.label}</span>
                           <span style={{ color: '#0f172a' }}>
                             <strong>{item.count}</strong> قطاع ({item.percent}%)
                           </span>
                         </div>
-                        {/* Visual progress bar */}
-                        <div style={{ height: '8px', backgroundColor: '#f1f5f9', borderRadius: '4px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                          <div style={{ height: '100%', width: `${Math.max(item.percent, 2)}%`, backgroundColor: item.color, borderRadius: '4px' }}></div>
+                        <div style={{ height: '7px', backgroundColor: '#f1f5f9', borderRadius: '3.5px', overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                          <div style={{ height: '100%', width: `${Math.max(item.percent, 2)}%`, backgroundColor: item.color, borderRadius: '3.5px' }}></div>
                         </div>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* CHART 3: Sector Lengths Comparison */}
-                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '10px 12px', backgroundColor: '#ffffff' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
-                      ٣. مقارنة أطوال الحفر حسب القطاعات الرئيسية (م.ط)
+                {/* Permit Compliance & Safety Status */}
+                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '8px 12px', backgroundColor: '#ffffff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '6px' }}>
+                    <h3 style={{ fontSize: '10.5px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
+                      مؤشر التراخيص والفسوحات الميدانية (بلدي / الأمانة)
                     </h3>
-                    <span style={{ fontSize: '9px', color: '#1e3a8a', fontWeight: 800 }}>أعلى القطاعات أطوالاً</span>
+                    <span style={{ fontSize: '8.5px', color: '#047857', fontWeight: 800 }}>امتثال ميداني</span>
                   </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                    {stats.topSectors.map(([sectorName, len], idx) => {
-                      const maxLen = stats.topSectors[0] ? stats.topSectors[0][1] : 1;
-                      const barPercent = Math.round((len / (maxLen || 1)) * 100);
-                      return (
-                        <div key={idx}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '8.5px', fontWeight: 800, marginBottom: '2px' }}>
-                            <span style={{ color: '#0f172a' }}>قطاع: {sectorName}</span>
-                            <span style={{ color: '#1e3a8a' }}>{len.toLocaleString('ar-SA')} م.ط</span>
-                          </div>
-                          <div style={{ height: '7px', backgroundColor: '#f1f5f9', borderRadius: '3px', overflow: 'hidden' }}>
-                            <div style={{ height: '100%', width: `${Math.max(barPercent, 3)}%`, backgroundColor: '#0284c7', borderRadius: '3px' }}></div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* CHART 4: Permit Compliance & Safety Status */}
-                <div style={{ border: '1.5px solid #cbd5e1', borderRadius: '6px', padding: '10px 12px', backgroundColor: '#ffffff' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px', marginBottom: '8px' }}>
-                    <h3 style={{ fontSize: '11px', fontWeight: 900, color: '#0f172a', margin: 0, letterSpacing: 'normal' }}>
-                      ٤. مؤشر التراخيص والفسوحات الميدانية (بلدي / الأمانة)
-                    </h3>
-                    <span style={{ fontSize: '9px', color: '#047857', fontWeight: 800 }}>امتثال ميداني</span>
-                  </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px', height: '105px' }}>
-                    {/* Visual Meter / Ring Box */}
-                    <div style={{ width: '85px', height: '85px', borderRadius: '50%', border: '6px solid #16a34a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0fdf4', flexShrink: 0 }}>
-                      <span style={{ fontSize: '18px', fontWeight: 900, color: '#15803d' }}>%{stats.permitPercentage}</span>
-                      <span style={{ fontSize: '7.5px', fontWeight: 800, color: '#166534' }}>تصاريح سارية</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', height: '80px' }}>
+                    {/* Visual Meter Box */}
+                    <div style={{ width: '70px', height: '70px', borderRadius: '50%', border: '5px solid #16a34a', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#f0fdf4', flexShrink: 0 }}>
+                      <span style={{ fontSize: '16px', fontWeight: 900, color: '#15803d' }}>%{stats.permitPercentage}</span>
+                      <span style={{ fontSize: '7px', fontWeight: 800, color: '#166534' }}>تصاريح سارية</span>
                     </div>
 
                     {/* Stats List */}
-                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '9px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '3px' }}>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '8.5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '2px' }}>
                         <span style={{ color: '#475569' }}>قطاعات بفسح أو إذن حفر:</span>
                         <strong style={{ color: '#15803d' }}>{stats.withPermitCount} قطاع</strong>
                       </div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '3px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #cbd5e1', paddingBottom: '2px' }}>
                         <span style={{ color: '#475569' }}>قطاعات قيد استخراج التصريح:</span>
                         <strong style={{ color: '#b91c1c' }}>{stats.totalCount - stats.withPermitCount} قطاع</strong>
                       </div>
                       <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <span style={{ color: '#475569' }}>مستوى الأمان والسلامة:</span>
+                        <span style={{ color: '#475569' }}>مستوى السلامة والتنسيق:</span>
                         <strong style={{ color: stats.permitPercentage > 80 ? '#15803d' : '#b45309' }}>
-                          {stats.permitPercentage > 80 ? 'ممتاز (ممتثل للمواصفات)' : 'يتطلب متابعة سريعة'}
+                          {stats.permitPercentage > 80 ? 'ممتاز (ممتثل للأنظمة)' : 'يتطلب متابعة سريعة'}
                         </strong>
                       </div>
                     </div>
@@ -1180,15 +1436,26 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '9.5px', textAlign: 'right' }}>
                   <thead>
                     <tr style={{ backgroundColor: '#1e293b', color: '#ffffff', fontWeight: 900, border: '1px solid #0f172a' }}>
-                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '32px' }}>م</th>
-                      <th style={{ padding: '6px 8px', border: '1px solid #334155', width: '90px' }}>القطاع</th>
-                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '60px' }}>رقم الخط</th>
-                      <th style={{ padding: '6px 8px', border: '1px solid #334155', width: '170px' }}>اسم الشارع</th>
-                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '65px' }}>طول القطاع</th>
-                      <th style={{ padding: '6px 10px', border: '1px solid #334155' }}>وصف العمل الحالي المعتمد</th>
-                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '65px' }}>مدة الفتح</th>
-                      <th style={{ padding: '6px 8px', border: '1px solid #334155', width: '110px' }}>الفسح / إذن الحفر</th>
-                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '80px' }}>الحالة</th>
+                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: detailedDateColumns ? '28px' : '32px' }}>م</th>
+                      <th style={{ padding: '6px 6px', border: '1px solid #334155', width: detailedDateColumns ? '80px' : '90px' }}>القطاع</th>
+                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: detailedDateColumns ? '48px' : '55px' }}>رقم الخط</th>
+                      <th style={{ padding: '6px 6px', border: '1px solid #334155', width: detailedDateColumns ? '130px' : '155px' }}>اسم الشارع</th>
+                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: detailedDateColumns ? '48px' : '60px' }}>طول القطاع</th>
+                      <th style={{ padding: '6px 8px', border: '1px solid #334155' }}>وصف العمل الحالي المعتمد</th>
+                      {detailedDateColumns ? (
+                        <>
+                          <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '52px' }}>مدة الفتح</th>
+                          <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '74px' }}>تاريخ بدء الحفر</th>
+                          <th style={{ padding: '6px 6px', border: '1px solid #334155', width: '95px' }}>الفسح وتاريخه</th>
+                          <th style={{ padding: '6px 6px', border: '1px solid #334155', width: '95px' }}>إذن الحفر وتاريخه</th>
+                        </>
+                      ) : (
+                        <>
+                          <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: '78px' }}>مدة الفتح والبدء</th>
+                          <th style={{ padding: '6px 6px', border: '1px solid #334155', width: '135px' }}>الفسح وإذن الحفر والتواريخ</th>
+                        </>
+                      )}
+                      <th style={{ padding: '6px 4px', border: '1px solid #334155', textAlign: 'center', width: detailedDateColumns ? '68px' : '75px' }}>الحالة</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1196,6 +1463,8 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                       const isEven = rowIdx % 2 === 0;
                       const days = typeof item.openDays === 'number' ? Math.round(item.openDays) : (item.duration ? Number(item.duration) : null);
                       const isCritical = days !== null && days > 30;
+                      const permitDate = item.permitIssueDate || (item.raw && (item.raw['تارخ اصدار الفسح (ميلادي)'] || item.raw['تاريخ اصدار الفسح (ميلادي)'] || item.raw['تاريخ الفسح']));
+                      const digDate = item.digPermitDate || item.startDate || (item.raw && (item.raw['تاريخ إذن الحفر \n( ميلادى)'] || item.raw['تاريخ إذن الحفر (ميلادي)'] || item.raw['تاريخ إذن الحفر']));
 
                       return (
                         <tr
@@ -1208,29 +1477,115 @@ export const PdfExportModal: React.FC<PdfExportModalProps> = ({
                           <td style={{ padding: '4.5px 4px', textAlign: 'center', fontWeight: 800, color: '#334155', border: '1px solid #cbd5e1' }}>
                             {item.serialNumber}
                           </td>
-                          <td style={{ padding: '4.5px 8px', fontWeight: 900, color: '#0f172a', border: '1px solid #cbd5e1' }}>
+                          <td style={{ padding: '4.5px 6px', fontWeight: 900, color: '#0f172a', border: '1px solid #cbd5e1' }}>
                             {item.sector}
                           </td>
                           <td style={{ padding: '4.5px 4px', textAlign: 'center', fontWeight: 800, color: '#1e3a8a', fontFamily: 'monospace', border: '1px solid #cbd5e1' }}>
                             {item.lineNo || '—'}
                           </td>
-                          <td style={{ padding: '4.5px 8px', fontWeight: 700, color: '#0f172a', border: '1px solid #cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '165px' }}>
+                          <td style={{ padding: '4.5px 6px', fontWeight: 700, color: '#0f172a', border: '1px solid #cbd5e1', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: detailedDateColumns ? '125px' : '150px' }}>
                             {item.streetName || '—'}
                           </td>
                           <td style={{ padding: '4.5px 4px', textAlign: 'center', fontWeight: 800, color: '#0369a1', border: '1px solid #cbd5e1' }}>
                             {item.lengthMeters !== undefined ? `${item.lengthMeters} م` : '—'}
                           </td>
-                          <td style={{ padding: '4.5px 10px', fontWeight: 700, color: '#0f172a', border: '1px solid #cbd5e1', lineHeight: '1.3' }}>
-                            {item.workDescription || '—'}
+                          <td style={{ padding: '4.5px 6px', fontWeight: 700, color: '#0f172a', border: '1px solid #cbd5e1', lineHeight: '1.25' }}>
+                            {(() => {
+                              const stageKey = classifyWorkStatus(item);
+                              const meta = STAGE_CATEGORIES[stageKey];
+                              const badgeStyle = getStageBadgeStyle(meta.stageNumber);
+                              return (
+                                <div>
+                                  <div style={{ marginBottom: '2px' }}>
+                                    <span
+                                      style={{
+                                        fontSize: '7.5px',
+                                        fontWeight: 800,
+                                        padding: '1px 5px',
+                                        borderRadius: '3px',
+                                        backgroundColor: badgeStyle.bg,
+                                        color: badgeStyle.text,
+                                        border: `1px solid ${badgeStyle.border}`,
+                                        display: 'inline-block',
+                                        whiteSpace: 'nowrap',
+                                      }}
+                                    >
+                                      {meta.title}
+                                    </span>
+                                  </div>
+                                  <div style={{ fontSize: '8.5px', color: '#0f172a' }}>
+                                    {item.workDescription || '—'}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </td>
-                          <td style={{ padding: '4.5px 4px', textAlign: 'center', fontWeight: 900, color: isCritical ? '#b91c1c' : '#78350f', border: '1px solid #cbd5e1' }}>
-                            {days !== null ? `${days} يوم` : '—'}
-                          </td>
-                          <td style={{ padding: '4.5px 8px', fontSize: '9px', border: '1px solid #cbd5e1', lineHeight: '1.2' }}>
-                            {item.permit ? <div style={{ fontWeight: 700, color: '#0f172a' }}>فسح: {item.permit}</div> : null}
-                            {item.digPermitNo ? <div style={{ color: '#475569', fontSize: '8.5px' }}>إذن: {item.digPermitNo}</div> : null}
-                            {!item.permit && !item.digPermitNo ? <span style={{ color: '#94a3b8' }}>—</span> : null}
-                          </td>
+
+                          {detailedDateColumns ? (
+                            <>
+                              <td style={{ padding: '4.5px 3px', textAlign: 'center', fontWeight: 900, color: isCritical ? '#b91c1c' : '#78350f', border: '1px solid #cbd5e1', fontSize: '9px' }}>
+                                {days !== null ? `${days} يوم` : '—'}
+                              </td>
+                              <td style={{ padding: '4.5px 3px', textAlign: 'center', fontWeight: 800, color: '#1e3a8a', fontFamily: 'monospace', fontSize: '8px', border: '1px solid #cbd5e1', whiteSpace: 'nowrap' }}>
+                                {digDate || '—'}
+                              </td>
+                              <td style={{ padding: '4.5px 5px', fontSize: '8.5px', border: '1px solid #cbd5e1', lineHeight: '1.2' }}>
+                                {item.permit ? <div style={{ fontWeight: 800, color: '#0f172a' }}>فسح: {item.permit}</div> : <span style={{ color: '#94a3b8' }}>—</span>}
+                                {permitDate ? (
+                                  <div style={{ fontSize: '7.5px', color: '#047857', fontWeight: 800, fontFamily: 'monospace' }}>
+                                    بتاريخ: {permitDate}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td style={{ padding: '4.5px 5px', fontSize: '8.5px', border: '1px solid #cbd5e1', lineHeight: '1.2' }}>
+                                {item.digPermitNo ? <div style={{ color: '#1e293b', fontSize: '8px', fontWeight: 700 }}>إذن: {item.digPermitNo}</div> : (!digDate && <span style={{ color: '#94a3b8' }}>—</span>)}
+                                {digDate ? (
+                                  <div style={{ fontSize: '7.5px', color: '#1e40af', fontWeight: 800, fontFamily: 'monospace' }}>
+                                    بتاريخ: {digDate}
+                                  </div>
+                                ) : null}
+                              </td>
+                            </>
+                          ) : (
+                            <>
+                              <td style={{ padding: '4px 3px', textAlign: 'center', border: '1px solid #cbd5e1' }}>
+                                <div style={{ fontWeight: 900, color: isCritical ? '#b91c1c' : '#78350f', fontSize: '9.5px' }}>
+                                  {days !== null ? `${days} يوم` : '—'}
+                                </div>
+                                {digDate ? (
+                                  <div style={{ fontSize: '7.5px', color: '#1e3a8a', fontWeight: 800, marginTop: '2px', whiteSpace: 'nowrap', fontFamily: 'monospace' }}>
+                                    بدء: {digDate}
+                                  </div>
+                                ) : null}
+                              </td>
+                              <td style={{ padding: '4.5px 6px', fontSize: '8.5px', border: '1px solid #cbd5e1', lineHeight: '1.25' }}>
+                                {item.permit ? (
+                                  <div style={{ marginBottom: (item.digPermitNo || digDate) ? '3px' : '0' }}>
+                                    <div style={{ fontWeight: 800, color: '#0f172a' }}>فسح: {item.permit}</div>
+                                    {permitDate ? (
+                                      <div style={{ fontSize: '7.5px', color: '#047857', fontWeight: 800, fontFamily: 'monospace' }}>
+                                        بتاريخ: {permitDate}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                                {(item.digPermitNo || digDate) ? (
+                                  <div>
+                                    {item.digPermitNo ? (
+                                      <div style={{ color: '#1e293b', fontSize: '8px', fontWeight: 700 }}>إذن: {item.digPermitNo}</div>
+                                    ) : null}
+                                    {digDate ? (
+                                      <div style={{ fontSize: '7.5px', color: '#1e40af', fontWeight: 800, fontFamily: 'monospace' }}>
+                                        بتاريخ: {digDate}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                ) : null}
+                                {!item.permit && !item.digPermitNo && !digDate && <span style={{ color: '#94a3b8' }}>—</span>}
+                              </td>
+                            </>
+                          )}
+
                           <td style={{ padding: '4.5px 4px', textAlign: 'center', border: '1px solid #cbd5e1' }}>
                             <span style={{
                               display: 'inline-block',
